@@ -14,6 +14,7 @@ Source0:        %{tarname}.tar.bz2
 Source2:        pythonstart
 Source3:        python.sh
 Source4:        python.csh
+Source1001: packaging/python.manifest 
 #Source11:       testfiles.tar.bz2
 # issues with copyrighted Unicode testing files
 Patch1:         python-2.7-dirs.patch
@@ -150,6 +151,7 @@ Authors:
 sed -i 's/^version_required/dnl version_required/' configure.in
 
 %build
+cp %{SOURCE1001} .
 export OPT="$RPM_OPT_FLAGS"
 
 autoreconf -f -i . # Modules/_ctypes/libffi
@@ -330,6 +332,7 @@ rm -rf $RPM_BUILD_ROOT
 %postun -p /sbin/ldconfig
 
 %files idle
+%manifest python.manifest
 %defattr(644, root, root, 755)
 %dir /etc/%{idle_name}
 %config /etc/%{idle_name}/*
@@ -342,27 +345,32 @@ rm -rf $RPM_BUILD_ROOT
 %attr(755, root, root) %{_bindir}/%{idle_name}
    
 %files xml  
+%manifest python.manifest
 %{_libdir}/python%{python_version}/xml/*  
 %{_libdir}/python%{python_version}/xml/*/*  
 
 %files demo
+%manifest python.manifest
 %defattr(644, root, root, 755)
 %doc %{_docdir}/%{name}/Demo
 %doc %{_docdir}/%{name}/Tools
 
 
 %files curses
+%manifest python.manifest
 %defattr(644, root, root, 755)
 %{_libdir}/python%{python_version}/curses
 %{_libdir}/python%{python_version}/lib-dynload/_curses.so
 %{_libdir}/python%{python_version}/lib-dynload/_curses_panel.so
 
 %files gdbm
+%manifest python.manifest
 %defattr(644, root, root, 755)
 %{_libdir}/python%{python_version}/lib-dynload/gdbm.so
 %{_libdir}/python%{python_version}/lib-dynload/dbm.so
 
 %files
+%manifest python.manifest
 %defattr(644, root, root, 755)
 %config /etc/pythonstart
 %config /etc/profile.d/python.*
