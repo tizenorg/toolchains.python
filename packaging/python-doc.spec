@@ -15,6 +15,7 @@ Source0:        %{tarname}.tar.bz2
 Source1:        python-%{version}-docs-html.tar.bz2
 Source2:        python-%{version}-docs-pdf-a4.tar.bz2
 Source3:        python-%{version}-docs-pdf-letter.tar.bz2
+Source1001: packaging/python-doc.manifest 
 Provides:       pyth_doc pyth_ps
 Obsoletes:      pyth_doc pyth_ps
 
@@ -48,6 +49,7 @@ Authors:
 %setup -q -n %{tarname}
 
 %build
+cp %{SOURCE1001} .
 # nothing to do (...whistles innocently)
 
 %install
@@ -70,6 +72,7 @@ done
 rm -rf $RPM_BUILD_ROOT
 
 %files
+%manifest python-doc.manifest
 %defattr(644, root, root, 755)
 %dir %{_docdir}/%{pyname}
 %doc %{_docdir}/%{pyname}/Misc
@@ -78,6 +81,7 @@ rm -rf $RPM_BUILD_ROOT
 %doc %{_docdir}/%{pyname}/README
 
 %files pdf
+%manifest python-doc.manifest
 %defattr(644, root, root, 755)
 %doc %{_docdir}/%{pyname}/paper-a4
 %doc %{_docdir}/%{pyname}/paper-letter
