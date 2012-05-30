@@ -16,6 +16,7 @@ Source2:        baselibs.conf
 Source3:        README.SUSE
 Source4:        distutils.cfg
 Source5:        _local.pth
+Source1001: packaging/python-base.manifest 
 
 Patch1:         python-2.7-dirs.patch
 Patch2:         python-distutils-rpm-8.patch
@@ -131,6 +132,7 @@ Authors:
 sed -i 's/^version_required/dnl version_required/' configure.in
 
 %build
+cp %{SOURCE1001} .
 export OPT="$RPM_OPT_FLAGS"
 
 autoreconf -f -i . # Modules/_ctypes/libffi
@@ -226,6 +228,7 @@ rm -rf $RPM_BUILD_ROOT
 /sbin/ldconfig
 
 %files -n python-devel
+%manifest python-base.manifest
 %defattr(-, root, root)
 %{_libdir}/python%{python_version}/config/*
 %exclude %{_libdir}/python%{python_version}/config/Setup
@@ -242,16 +245,19 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/python%{python_version}-config
 
 %files -n python-xml
+%manifest python-base.manifest
 %defattr(644, root, root, 755)
 %{_libdir}/python%{python_version}/xml
 %{_libdir}/python%{python_version}/lib-dynload/pyexpat.so
 #%files -n libpython%{lib_version}
 
 %files -n libpython
+%manifest python-base.manifest
 %defattr(644, root, root)
 %{_libdir}/libpython*.so.*
 
 %files
+%manifest python-base.manifest
 %defattr(644, root, root, 755)
 %config /etc/rpm/macros.python
 %dir %{_docdir}/%{name}
