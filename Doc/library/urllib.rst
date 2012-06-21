@@ -23,7 +23,7 @@ built-in function :func:`open`, but accepts Universal Resource Locators (URLs)
 instead of filenames.  Some restrictions apply --- it can only open URLs for
 reading, and no seek operations are available.
 
-.. warning:: When opening HTTPS URLs, it is not attempted to validate the
+.. warning:: When opening HTTPS URLs, it does not attempt to validate the
    server certificate.  Use at your own risk!
 
 
@@ -167,15 +167,15 @@ High-level interface
       the  download is interrupted.
 
       The *Content-Length* is treated as a lower bound: if there's more data  to read,
-      urlretrieve reads more data, but if less data is available,  it raises the
-      exception.
+      :func:`urlretrieve` reads more data, but if less data is available,  it raises
+      the exception.
 
       You can still retrieve the downloaded data in this case, it is stored  in the
       :attr:`content` attribute of the exception instance.
 
-      If no *Content-Length* header was supplied, urlretrieve can not check the size
-      of the data it has downloaded, and just returns it.  In this case you just have
-      to assume that the download was successful.
+      If no *Content-Length* header was supplied, :func:`urlretrieve` can not check
+      the size of the data it has downloaded, and just returns it.  In this case you
+      just have to assume that the download was successful.
 
 
 .. data:: _urlopener
@@ -210,7 +210,7 @@ Utility functions
 
    Replace special characters in *string* using the ``%xx`` escape. Letters,
    digits, and the characters ``'_.-'`` are never quoted. By default, this
-   function is intended for quoting the path section of the URL.The optional
+   function is intended for quoting the path section of the URL. The optional
    *safe* parameter specifies additional characters that should not be quoted
    --- its default value is ``'/'``.
 
@@ -274,10 +274,10 @@ Utility functions
 .. function:: getproxies()
 
    This helper function returns a dictionary of scheme to proxy server URL
-   mappings. It scans the environment for variables named ``<scheme>_proxy``
-   for all operating systems first, and when it cannot find it, looks for proxy
-   information from Mac OSX System Configuration for Mac OS X and Windows
-   Systems Registry for Windows.
+   mappings. It scans the environment for variables named ``<scheme>_proxy``,
+   in case insensitive way, for all operating systems first, and when it cannot
+   find it, looks for proxy information from Mac OSX System Configuration for
+   Mac OS X and Windows Systems Registry for Windows.
 
 
 URL Opener objects
@@ -451,7 +451,7 @@ URL Opener objects
   you try to fetch a file whose read permissions make it inaccessible; the FTP
   code will try to read it, fail with a 550 error, and then perform a directory
   listing for the unreadable file. If fine-grained control is needed, consider
-  using the :mod:`ftplib` module, subclassing :class:`FancyURLOpener`, or changing
+  using the :mod:`ftplib` module, subclassing :class:`FancyURLopener`, or changing
   *_urlopener* to meet your needs.
 
 * This module does not support the use of proxies which require authentication.

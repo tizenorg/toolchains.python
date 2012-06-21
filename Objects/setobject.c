@@ -362,12 +362,14 @@ static int
 set_add_entry(register PySetObject *so, setentry *entry)
 {
     register Py_ssize_t n_used;
+    PyObject *key = entry->key;
+    long hash = entry->hash;
 
     assert(so->fill <= so->mask);  /* at least one empty slot */
     n_used = so->used;
-    Py_INCREF(entry->key);
-    if (set_insert_key(so, entry->key, entry->hash) == -1) {
-        Py_DECREF(entry->key);
+    Py_INCREF(key);
+    if (set_insert_key(so, key, hash) == -1) {
+        Py_DECREF(key);
         return -1;
     }
     if (!(so->used > n_used && so->fill*3 >= (so->mask+1)*2))
@@ -647,6 +649,8 @@ static int
 set_merge(PySetObject *so, PyObject *otherset)
 {
     PySetObject *other;
+    PyObject *key;
+    long hash;
     register Py_ssize_t i;
     register setentry *entry;
 
@@ -667,11 +671,13 @@ set_merge(PySetObject *so, PyObject *otherset)
     }
     for (i = 0; i <= other->mask; i++) {
         entry = &other->table[i];
-        if (entry->key != NULL &&
-            entry->key != dummy) {
-            Py_INCREF(entry->key);
-            if (set_insert_key(so, entry->key, entry->hash) == -1) {
-                Py_DECREF(entry->key);
+        key = entry->key;
+        hash = entry->hash;
+        if (key != NULL &&
+            key != dummy) {
+            Py_INCREF(key);
+            if (set_insert_key(so, key, hash) == -1) {
+                Py_DECREF(key);
                 return -1;
             }
         }
@@ -1640,15 +1646,22 @@ set_symmetric_difference_update(PySetObject *so, PyObject *other)
         while (_PyDict_Next(other, &pos, &key, &value, &hash)) {
             setentry an_entry;
 
+            Py_INCREF(key);
             an_entry.hash = hash;
             an_entry.key = key;
+
             rv = set_discard_entry(so, &an_entry);
-            if (rv == -1)
+            if (rv == -1) {
+                Py_DECREF(key);
                 return NULL;
-            if (rv == DISCARD_NOTFOUND) {
-                if (set_add_entry(so, &an_entry) == -1)
-                    return NULL;
             }
+            if (rv == DISCARD_NOTFOUND) {
+                if (set_add_entry(so, &an_entry) == -1) {
+                    Py_DECREF(key);
+                    return NULL;
+                }
+            }
+            Py_DECREF(key);
         }
         Py_RETURN_NONE;
     }
@@ -1858,7 +1871,7 @@ set_contains(PySetObject *so, PyObject *key)
         tmpkey = make_new_set(&PyFrozenSet_Type, key);
         if (tmpkey == NULL)
             return -1;
-        rv = set_contains(so, tmpkey);
+        rv = set_contains_key(so, tmpkey);
         Py_DECREF(tmpkey);
     }
     return rv;
@@ -1912,7 +1925,7 @@ If the element is not a member, raise a KeyError.");
 static PyObject *
 set_discard(PySetObject *so, PyObject *key)
 {
-    PyObject *tmpkey, *result;
+    PyObject *tmpkey;
     int rv;
 
     rv = set_discard_key(so, key);
@@ -1923,9 +1936,10 @@ set_discard(PySetObject *so, PyObject *key)
         tmpkey = make_new_set(&PyFrozenSet_Type, key);
         if (tmpkey == NULL)
             return NULL;
-        result = set_discard(so, tmpkey);
+        rv = set_discard_key(so, tmpkey);
         Py_DECREF(tmpkey);
-        return result;
+        if (rv == -1)
+            return NULL;
     }
     Py_RETURN_NONE;
 }

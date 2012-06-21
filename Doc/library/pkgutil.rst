@@ -1,14 +1,17 @@
-
 :mod:`pkgutil` --- Package extension utility
 ============================================
 
 .. module:: pkgutil
    :synopsis: Utilities for the import system.
 
+.. versionadded:: 2.3
+
+**Source code:** :source:`Lib/pkgutil.py`
+
+--------------
+
 This module provides utilities for the import system, in particular package
 support.
-
-.. versionadded:: 2.3
 
 
 .. function:: extend_path(path, name)
@@ -80,8 +83,8 @@ support.
    newly created by a path hook.
 
    If there is no importer, a wrapper around the basic import machinery is
-   returned.  This wrapper is never inserted into the importer cache (None is
-   inserted instead).
+   returned.  This wrapper is never inserted into the importer cache (``None``
+   is inserted instead).
 
    The cache (or part of it) can be cleared manually if a rescan of
    :data:`sys.path_hooks` is necessary.
@@ -187,3 +190,5 @@ support.
 
    If the package cannot be located or loaded, or it uses a :pep:`302` loader
    which does not support :func:`get_data`, then ``None`` is returned.
+
+   .. versionadded:: 2.6

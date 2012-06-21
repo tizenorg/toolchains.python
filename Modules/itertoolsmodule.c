@@ -1215,6 +1215,7 @@ islice_next(isliceobject *lz)
 {
     PyObject *item;
     PyObject *it = lz->it;
+    Py_ssize_t stop = lz->stop;
     Py_ssize_t oldnext;
     PyObject *(*iternext)(PyObject *);
 
@@ -1226,16 +1227,18 @@ islice_next(isliceobject *lz)
         Py_DECREF(item);
         lz->cnt++;
     }
-    if (lz->stop != -1 && lz->cnt >= lz->stop)
+    if (stop != -1 && lz->cnt >= stop)
         return NULL;
     item = iternext(it);
     if (item == NULL)
         return NULL;
     lz->cnt++;
     oldnext = lz->next;
-    lz->next += lz->step;
-    if (lz->next < oldnext)     /* Check for overflow */
-        lz->next = lz->stop;
+    /* The (size_t) cast below avoids the danger of undefined
+       behaviour from signed integer overflow. */
+    lz->next += (size_t)lz->step;
+    if (lz->next < oldnext || (stop != -1 && lz->next > stop))
+        lz->next = stop;
     return item;
 }
 

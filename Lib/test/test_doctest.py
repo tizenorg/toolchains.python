@@ -258,6 +258,21 @@ unless it's `None`:
     >>> e = doctest.Example('raise X()', '', exc_msg)
     >>> e.exc_msg
     '\n'
+
+Compare `Example`:
+    >>> example = doctest.Example('print 1', '1\n')
+    >>> same_example = doctest.Example('print 1', '1\n')
+    >>> other_example = doctest.Example('print 42', '42\n')
+    >>> example == same_example
+    True
+    >>> example != same_example
+    False
+    >>> hash(example) == hash(same_example)
+    True
+    >>> example == other_example
+    False
+    >>> example != other_example
+    True
 """
 
 def test_DocTest(): r"""
@@ -346,6 +361,50 @@ will raise a ValueError:
     >>> parser.get_doctest(docstring, globs, 'some_test', 'filename', 0)
     Traceback (most recent call last):
     ValueError: line 2 of the docstring for some_test lacks blank after ...: '...print 1'
+
+Compare `DocTest`:
+
+    >>> docstring = '''
+    ...     >>> print 12
+    ...     12
+    ... '''
+    >>> test = parser.get_doctest(docstring, globs, 'some_test',
+    ...                           'some_test', 20)
+    >>> same_test = parser.get_doctest(docstring, globs, 'some_test',
+    ...                                'some_test', 20)
+    >>> test == same_test
+    True
+    >>> test != same_test
+    False
+    >>> hash(test) == hash(same_test)
+    True
+    >>> docstring = '''
+    ...     >>> print 42
+    ...     42
+    ... '''
+    >>> other_test = parser.get_doctest(docstring, globs, 'other_test',
+    ...                                 'other_file', 10)
+    >>> test == other_test
+    False
+    >>> test != other_test
+    True
+
+Compare `DocTestCase`:
+
+    >>> DocTestCase = doctest.DocTestCase
+    >>> test_case = DocTestCase(test)
+    >>> same_test_case = DocTestCase(same_test)
+    >>> other_test_case = DocTestCase(other_test)
+    >>> test_case == same_test_case
+    True
+    >>> test_case != same_test_case
+    False
+    >>> hash(test_case) == hash(same_test_case)
+    True
+    >>> test == other_test_case
+    False
+    >>> test != other_test_case
+    True
 
 """
 
@@ -1292,7 +1351,7 @@ marking, as well as interline differences.
         ?     +              ++    ^
     TestResults(failed=1, attempted=1)
 
-The REPORT_ONLY_FIRST_FAILURE supresses result output after the first
+The REPORT_ONLY_FIRST_FAILURE suppresses result output after the first
 failing example:
 
     >>> def f(x):
@@ -1322,7 +1381,7 @@ failing example:
         2
     TestResults(failed=3, attempted=5)
 
-However, output from `report_start` is not supressed:
+However, output from `report_start` is not suppressed:
 
     >>> doctest.DocTestRunner(verbose=True, optionflags=flags).run(test)
     ... # doctest: +ELLIPSIS
@@ -2334,7 +2393,7 @@ optional `module_relative` parameter:
     TestResults(failed=0, attempted=2)
     >>> doctest.master = None  # Reset master.
 
-Verbosity can be increased with the optional `verbose` paremter:
+Verbosity can be increased with the optional `verbose` parameter:
 
     >>> doctest.testfile('test_doctest.txt', globs=globs, verbose=True)
     Trying:
@@ -2371,7 +2430,7 @@ parameter:
     TestResults(failed=1, attempted=2)
     >>> doctest.master = None  # Reset master.
 
-The summary report may be supressed with the optional `report`
+The summary report may be suppressed with the optional `report`
 parameter:
 
     >>> doctest.testfile('test_doctest.txt', report=False)

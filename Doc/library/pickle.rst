@@ -53,7 +53,7 @@ general :mod:`pickle` should always be the preferred way to serialize Python
 objects.  :mod:`marshal` exists primarily to support Python's :file:`.pyc`
 files.
 
-The :mod:`pickle` module differs from :mod:`marshal` several significant ways:
+The :mod:`pickle` module differs from :mod:`marshal` in several significant ways:
 
 * The :mod:`pickle` module keeps track of the objects it has already serialized,
   so that later references to the same object won't be serialized again.
@@ -364,7 +364,7 @@ raised in this case. You can carefully raise this limit with
 
 Note that functions (built-in and user-defined) are pickled by "fully qualified"
 name reference, not by value.  This means that only the function name is
-pickled, along with the name of module the function is defined in.  Neither the
+pickled, along with the name of the module the function is defined in.  Neither the
 function's code, nor any of its function attributes are pickled.  Thus the
 defining module must be importable in the unpickling environment, and the module
 must contain the named object, otherwise an exception will be raised. [#]_

@@ -1,4 +1,3 @@
-
 :mod:`inspect` --- Inspect live objects
 =======================================
 
@@ -9,6 +8,10 @@
 
 
 .. versionadded:: 2.1
+
+**Source code:** :source:`Lib/inspect.py`
+
+--------------
 
 The :mod:`inspect` module provides several useful functions to help get
 information about live objects such as modules, classes, methods, functions,
@@ -234,14 +237,14 @@ Note:
 
    Return a tuple of values that describe how Python will interpret the file
    identified by *path* if it is a module, or ``None`` if it would not be
-   identified as a module.  The return tuple is ``(name, suffix, mode, mtype)``,
-   where *name* is the name of the module without the name of any enclosing
-   package, *suffix* is the trailing part of the file name (which may not be a
-   dot-delimited extension), *mode* is the :func:`open` mode that would be used
-   (``'r'`` or ``'rb'``), and *mtype* is an integer giving the type of the
-   module.  *mtype* will have a value which can be compared to the constants
-   defined in the :mod:`imp` module; see the documentation for that module for
-   more information on module types.
+   identified as a module.  The return tuple is ``(name, suffix, mode,
+   module_type)``, where *name* is the name of the module without the name of
+   any enclosing package, *suffix* is the trailing part of the file name (which
+   may not be a dot-delimited extension), *mode* is the :func:`open` mode that
+   would be used (``'r'`` or ``'rb'``), and *module_type* is an integer giving
+   the type of the module.  *module_type* will have a value which can be
+   compared to the constants defined in the :mod:`imp` module; see the
+   documentation for that module for more information on module types.
 
    .. versionchanged:: 2.6
       Returns a :term:`named tuple` ``ModuleInfo(name, suffix, mode,
@@ -363,7 +366,7 @@ Note:
    .. impl-detail::
 
       getsets are attributes defined in extension modules via
-      :ctype:`PyGetSetDef` structures.  For Python implementations without such
+      :c:type:`PyGetSetDef` structures.  For Python implementations without such
       types, this method will always return ``False``.
 
    .. versionadded:: 2.5
@@ -376,7 +379,7 @@ Note:
    .. impl-detail::
 
       Member descriptors are attributes defined in extension modules via
-      :ctype:`PyMemberDef` structures.  For Python implementations without such
+      :c:type:`PyMemberDef` structures.  For Python implementations without such
       types, this method will always return ``False``.
 
    .. versionadded:: 2.5
@@ -464,12 +467,13 @@ Classes and functions
 
 .. function:: getargspec(func)
 
-   Get the names and default values of a Python function's arguments. A tuple of four
-   things is returned: ``(args, varargs, varkw, defaults)``. *args* is a list of
-   the argument names (it may contain nested lists). *varargs* and *varkw* are the
-   names of the ``*`` and ``**`` arguments or ``None``. *defaults* is a tuple of
-   default argument values or None if there are no default arguments; if this tuple
-   has *n* elements, they correspond to the last *n* elements listed in *args*.
+   Get the names and default values of a Python function's arguments. A tuple of
+   four things is returned: ``(args, varargs, keywords, defaults)``. *args* is a
+   list of the argument names (it may contain nested lists). *varargs* and
+   *keywords* are the names of the ``*`` and ``**`` arguments or
+   ``None``. *defaults* is a tuple of default argument values or None if there
+   are no default arguments; if this tuple has *n* elements, they correspond to
+   the last *n* elements listed in *args*.
 
    .. versionchanged:: 2.6
       Returns a :term:`named tuple` ``ArgSpec(args, varargs, keywords,
@@ -478,11 +482,11 @@ Classes and functions
 
 .. function:: getargvalues(frame)
 
-   Get information about arguments passed into a particular frame. A tuple of four
-   things is returned: ``(args, varargs, varkw, locals)``. *args* is a list of the
-   argument names (it may contain nested lists). *varargs* and *varkw* are the
-   names of the ``*`` and ``**`` arguments or ``None``. *locals* is the locals
-   dictionary of the given frame.
+   Get information about arguments passed into a particular frame. A tuple of
+   four things is returned: ``(args, varargs, keywords, locals)``. *args* is a
+   list of the argument names (it may contain nested lists). *varargs* and
+   *keywords* are the names of the ``*`` and ``**`` arguments or ``None``.
+   *locals* is the locals dictionary of the given frame.
 
    .. versionchanged:: 2.6
       Returns a :term:`named tuple` ``ArgInfo(args, varargs, keywords,

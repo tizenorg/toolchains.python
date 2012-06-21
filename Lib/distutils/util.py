@@ -4,7 +4,7 @@ Miscellaneous utility functions -- anything that doesn't fit into
 one of the other *util.py modules.
 """
 
-__revision__ = "$Id: util.py 86238 2010-11-06 04:06:18Z eric.araujo $"
+__revision__ = "$Id$"
 
 import sys, os, string, re
 from distutils.errors import DistutilsPlatformError
@@ -76,6 +76,11 @@ def get_platform ():
         if release[0] >= "5":           # SunOS 5 == Solaris 2
             osname = "solaris"
             release = "%d.%s" % (int(release[0]) - 3, release[2:])
+            # We can't use "platform.architecture()[0]" because a
+            # bootstrap problem. We use a dict to get an error
+            # if some suspicious happens.
+            bitness = {2147483647:"32bit", 9223372036854775807:"64bit"}
+            machine += ".%s" % bitness[sys.maxint]
         # fall through to standard osname-release-machine representation
     elif osname[:4] == "irix":              # could be "irix64"!
         return "%s-%s" % (osname, release)
@@ -97,9 +102,7 @@ def get_platform ():
         from distutils.sysconfig import get_config_vars
         cfgvars = get_config_vars()
 
-        macver = os.environ.get('MACOSX_DEPLOYMENT_TARGET')
-        if not macver:
-            macver = cfgvars.get('MACOSX_DEPLOYMENT_TARGET')
+        macver = cfgvars.get('MACOSX_DEPLOYMENT_TARGET')
 
         if 1:
             # Always calculate the release of the running machine,

@@ -1,5 +1,3 @@
-.. _tarfile-mod:
-
 :mod:`tarfile` --- Read and write tar archive files
 ===================================================
 
@@ -12,6 +10,9 @@
 .. moduleauthor:: Lars Gustäbel <lars@gustaebel.de>
 .. sectionauthor:: Lars Gustäbel <lars@gustaebel.de>
 
+**Source code:** :source:`Lib/tarfile.py`
+
+--------------
 
 The :mod:`tarfile` module makes it possible to read and write tar
 archives, including those using gzip or bz2 compression.
@@ -419,7 +420,9 @@ be finalized; only the internally used file object will be closed. See the
 
    .. deprecated:: 2.7
       The *exclude* parameter is deprecated, please use the *filter* parameter
-      instead.
+      instead.  For maximum portability, *filter* should be used as a keyword
+      argument rather than as a positional argument so that code won't be
+      affected when *exclude* is ultimately removed.
 
 
 .. method:: TarFile.addfile(tarinfo, fileobj=None)

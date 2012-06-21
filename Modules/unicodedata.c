@@ -682,10 +682,14 @@ nfc_nfkc(PyObject *self, PyObject *input, int k)
       comb = 0;
       while (i1 < end) {
           int comb1 = _getrecord_ex(*i1)->combining;
-          if (comb && (comb1 == 0 || comb == comb1)) {
-              /* Character is blocked. */
-              i1++;
-              continue;
+          if (comb) {
+              if (comb1 == 0)
+                  break;
+              if (comb >= comb1) {
+                  /* Character is blocked. */
+                  i1++;
+                  continue;
+              }
           }
           l = find_nfc_index(self, nfc_last, *i1);
           /* *i1 cannot be combined with *i. If *i1
@@ -709,6 +713,7 @@ nfc_nfkc(PyObject *self, PyObject *input, int k)
           /* Replace the original character. */
           *i = code;
           /* Mark the second character unused. */
+          assert(cskipped < 20);
           skipped[cskipped++] = i1;
           i1++;
           f = find_nfc_index(self, nfc_first, *i);
@@ -825,7 +830,7 @@ _gethash(const char *s, int len, int scale)
     unsigned long h = 0;
     unsigned long ix;
     for (i = 0; i < len; i++) {
-        h = (h * scale) + (unsigned char) toupper(Py_CHARMASK(s[i]));
+        h = (h * scale) + (unsigned char) Py_TOUPPER(Py_CHARMASK(s[i]));
         ix = h & 0xff000000;
         if (ix)
             h = (h ^ ((ix>>24) & 0xff)) & 0x00ffffff;
@@ -973,7 +978,7 @@ _cmpname(PyObject *self, int code, const char* name, int namelen)
     if (!_getucname(self, code, buffer, sizeof(buffer)))
         return 0;
     for (i = 0; i < namelen; i++) {
-        if (toupper(Py_CHARMASK(name[i])) != buffer[i])
+        if (Py_TOUPPER(Py_CHARMASK(name[i])) != buffer[i])
             return 0;
     }
     return buffer[namelen] == '\0';

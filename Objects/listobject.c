@@ -11,7 +11,7 @@
 /* Ensure ob_item has room for at least newsize elements, and set
  * ob_size to newsize.  If newsize > ob_size on entry, the content
  * of the new slots at exit is undefined heap trash; it's the caller's
- * responsiblity to overwrite them with sane values.
+ * responsibility to overwrite them with sane values.
  * The number of allocated elements may grow, shrink, or stay the same.
  * Failure is impossible if newsize <= self.allocated on entry, although
  * that partly relies on an assumption that the system realloc() never
@@ -58,7 +58,7 @@ list_resize(PyListObject *self, Py_ssize_t newsize)
     if (newsize == 0)
         new_allocated = 0;
     items = self->ob_item;
-    if (new_allocated <= ((~(size_t)0) / sizeof(PyObject *)))
+    if (new_allocated <= (PY_SIZE_MAX / sizeof(PyObject *)))
         PyMem_RESIZE(items, PyObject *, new_allocated);
     else
         items = NULL;
@@ -551,9 +551,9 @@ list_repeat(PyListObject *a, Py_ssize_t n)
     PyObject *elem;
     if (n < 0)
         n = 0;
-    size = Py_SIZE(a) * n;
-    if (n && size/n != Py_SIZE(a))
+    if (n > 0 && Py_SIZE(a) > PY_SSIZE_T_MAX / n)
         return PyErr_NoMemory();
+    size = Py_SIZE(a) * n;
     if (size == 0)
         return PyList_New(0);
     np = (PyListObject *) PyList_New(size);

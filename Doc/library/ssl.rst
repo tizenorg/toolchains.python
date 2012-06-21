@@ -1,19 +1,22 @@
-:mod:`ssl` --- SSL wrapper for socket objects
-=============================================
+:mod:`ssl` --- TLS/SSL wrapper for socket objects
+=================================================
 
 .. module:: ssl
-   :synopsis: SSL wrapper for socket objects
+   :synopsis: TLS/SSL wrapper for socket objects
 
 .. moduleauthor:: Bill Janssen <bill.janssen@gmail.com>
-
-.. versionadded:: 2.6
-
 .. sectionauthor::  Bill Janssen <bill.janssen@gmail.com>
 
 
 .. index:: single: OpenSSL; (use in module ssl)
 
 .. index:: TLS, SSL, Transport Layer Security, Secure Sockets Layer
+
+.. versionadded:: 2.6
+
+**Source code:** :source:`Lib/ssl.py`
+
+--------------
 
 This module provides access to Transport Layer Security (often known as "Secure
 Sockets Layer") encryption and peer authentication facilities for network
@@ -100,9 +103,8 @@ Functions, Constants, and Exceptions
    The parameter ``ssl_version`` specifies which version of the SSL protocol to
    use.  Typically, the server chooses a particular protocol version, and the
    client must adapt to the server's choice.  Most of the versions are not
-   interoperable with the other versions.  If not specified, for client-side
-   operation, the default SSL version is SSLv3; for server-side operation,
-   SSLv23.  These version selections provide the most compatibility with other
+   interoperable with the other versions.  If not specified, the default is
+   :data:`PROTOCOL_SSLv23`; it provides the most compatibility with other
    versions.
 
    Here's a table showing which versions in a client (down the side) can connect
@@ -114,7 +116,7 @@ Functions, Constants, and Exceptions
         *client* / **server**    **SSLv2**  **SSLv3**  **SSLv23**  **TLSv1**
        ------------------------  ---------  ---------  ----------  ---------
         *SSLv2*                    yes        no         yes         no
-        *SSLv3*                    yes        yes        yes         no
+        *SSLv3*                    no         yes        yes         no
         *SSLv23*                   yes        no         yes         no
         *TLSv1*                    no         no         yes         yes
        ========================  =========  =========  ==========  =========
@@ -236,6 +238,9 @@ Functions, Constants, and Exceptions
 .. data:: PROTOCOL_SSLv2
 
    Selects SSL version 2 as the channel encryption protocol.
+
+   This protocol is not available if OpenSSL is compiled with OPENSSL_NO_SSL2
+   flag.
 
    .. warning::
 
@@ -505,11 +510,11 @@ To test for the presence of SSL support in a Python installation, user code
 should use the following idiom::
 
    try:
-      import ssl
+       import ssl
    except ImportError:
-      pass
+       pass
    else:
-      [ do something that requires SSL support ]
+       ... # do something that requires SSL support
 
 Client-side operation
 ^^^^^^^^^^^^^^^^^^^^^
@@ -582,29 +587,31 @@ the other end, and use :func:`wrap_socket` to create a server-side SSL context
 for it::
 
    while True:
-      newsocket, fromaddr = bindsocket.accept()
-      connstream = ssl.wrap_socket(newsocket,
-                                   server_side=True,
-                                   certfile="mycertfile",
-                                   keyfile="mykeyfile",
-                                   ssl_version=ssl.PROTOCOL_TLSv1)
-      deal_with_client(connstream)
+       newsocket, fromaddr = bindsocket.accept()
+       connstream = ssl.wrap_socket(newsocket,
+                                    server_side=True,
+                                    certfile="mycertfile",
+                                    keyfile="mykeyfile",
+                                    ssl_version=ssl.PROTOCOL_TLSv1)
+       try:
+           deal_with_client(connstream)
+       finally:
+           connstream.shutdown(socket.SHUT_RDWR)
+           connstream.close()
 
 Then you'd read data from the ``connstream`` and do something with it till you
 are finished with the client (or the client is finished with you)::
 
    def deal_with_client(connstream):
-
-      data = connstream.read()
-      # null data means the client is finished with us
-      while data:
-         if not do_something(connstream, data):
-            # we'll assume do_something returns False
-            # when we're finished with client
-            break
-         data = connstream.read()
-      # finished with client
-      connstream.close()
+       data = connstream.read()
+       # null data means the client is finished with us
+       while data:
+           if not do_something(connstream, data):
+               # we'll assume do_something returns False
+               # when we're finished with client
+               break
+           data = connstream.read()
+       # finished with client
 
 And go back to listening for new client connections.
 
@@ -614,8 +621,8 @@ And go back to listening for new client connections.
    Class :class:`socket.socket`
             Documentation of underlying :mod:`socket` class
 
-   `Introducing SSL and Certificates using OpenSSL <http://old.pseudonym.org/ssl/wwwj-index.html>`_
-       Frederick J. Hirsch
+   `TLS (Transport Layer Security) and SSL (Secure Socket Layer) <http://www3.rad.com/networks/applications/secure/tls.htm>`_
+      Debby Koren
 
    `RFC 1422: Privacy Enhancement for Internet Electronic Mail: Part II: Certificate-Based Key Management <http://www.ietf.org/rfc/rfc1422>`_
        Steve Kent

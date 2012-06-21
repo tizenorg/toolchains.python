@@ -962,21 +962,14 @@ static PyObject *
 xmlparse_ParseFile(xmlparseobject *self, PyObject *f)
 {
     int rv = 1;
-    FILE *fp;
     PyObject *readmethod = NULL;
 
-    if (PyFile_Check(f)) {
-        fp = PyFile_AsFile(f);
-    }
-    else {
-        fp = NULL;
-        readmethod = PyObject_GetAttrString(f, "read");
-        if (readmethod == NULL) {
-            PyErr_Clear();
-            PyErr_SetString(PyExc_TypeError,
-                            "argument must have 'read' attribute");
-            return NULL;
-        }
+    readmethod = PyObject_GetAttrString(f, "read");
+    if (readmethod == NULL) {
+        PyErr_SetString(PyExc_TypeError,
+                        "argument must have 'read' attribute");
+        return NULL;
+
     }
     for (;;) {
         int bytes_read;
@@ -986,20 +979,12 @@ xmlparse_ParseFile(xmlparseobject *self, PyObject *f)
             return PyErr_NoMemory();
         }
 
-        if (fp) {
-            bytes_read = fread(buf, sizeof(char), BUF_SIZE, fp);
-            if (bytes_read < 0) {
-                PyErr_SetFromErrno(PyExc_IOError);
-                return NULL;
-            }
+        bytes_read = readinst(buf, BUF_SIZE, readmethod);
+        if (bytes_read < 0) {
+            Py_XDECREF(readmethod);
+            return NULL;
         }
-        else {
-            bytes_read = readinst(buf, BUF_SIZE, readmethod);
-            if (bytes_read < 0) {
-                Py_XDECREF(readmethod);
-                return NULL;
-            }
-        }
+
         rv = XML_ParseBuffer(self->itself, bytes_read, bytes_read == 0);
         if (PyErr_Occurred()) {
             Py_XDECREF(readmethod);
@@ -1317,6 +1302,13 @@ newxmlparseobject(char *encoding, char *namespace_separator, PyObject *intern)
     else {
         self->itself = XML_ParserCreate(encoding);
     }
+#if ((XML_MAJOR_VERSION >= 2) && (XML_MINOR_VERSION >= 1)) || defined(XML_HAS_SET_HASH_SALT)
+    /* This feature was added upstream in libexpat 2.1.0.  Our expat copy
+     * has a backport of this feature where we also define XML_HAS_SET_HASH_SALT
+     * to indicate that we can still use it. */
+    XML_SetHashSalt(self->itself,
+                    (unsigned long)_Py_HashSecret.prefix);
+#endif
     self->intern = intern;
     Py_XINCREF(self->intern);
 #ifdef Py_TPFLAGS_HAVE_GC
@@ -1807,26 +1799,6 @@ static struct PyMethodDef pyexpat_methods[] = {
 PyDoc_STRVAR(pyexpat_module_documentation,
 "Python wrapper for Expat parser.");
 
-/* Return a Python string that represents the version number without the
- * extra cruft added by revision control, even if the right options were
- * given to the "cvs export" command to make it not include the extra
- * cruft.
- */
-static PyObject *
-get_version_string(void)
-{
-    static char *rcsid = "$Revision: 85819 $";
-    char *rev = rcsid;
-    int i = 0;
-
-    while (!isdigit(Py_CHARMASK(*rev)))
-        ++rev;
-    while (rev[i] != ' ' && rev[i] != '\0')
-        ++i;
-
-    return PyString_FromStringAndSize(rev, i);
-}
-
 /* Initialization function for the module */
 
 #ifndef MODULE_NAME
@@ -1856,6 +1828,7 @@ MODULE_INITFUNC(void)
     PyObject *modelmod_name;
     PyObject *model_module;
     PyObject *sys_modules;
+    PyObject *version;
     static struct PyExpat_CAPI capi;
     PyObject* capi_object;
 
@@ -1887,7 +1860,10 @@ MODULE_INITFUNC(void)
     Py_INCREF(&Xmlparsetype);
     PyModule_AddObject(m, "XMLParserType", (PyObject *) &Xmlparsetype);
 
-    PyModule_AddObject(m, "__version__", get_version_string());
+    version = PyString_FromString(PY_VERSION);
+    if (!version)
+        return;
+    PyModule_AddObject(m, "__version__", version);
     PyModule_AddStringConstant(m, "EXPAT_VERSION",
                                (char *) XML_ExpatVersion());
     {

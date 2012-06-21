@@ -62,8 +62,10 @@ enum py_ssl_cert_requirements {
 };
 
 enum py_ssl_version {
+#ifndef OPENSSL_NO_SSL2
     PY_SSL_VERSION_SSL2,
-    PY_SSL_VERSION_SSL3,
+#endif
+    PY_SSL_VERSION_SSL3=1,
     PY_SSL_VERSION_SSL23,
     PY_SSL_VERSION_TLS1
 };
@@ -302,8 +304,10 @@ newPySSLObject(PySocketSockObject *Sock, char *key_file, char *cert_file,
         self->ctx = SSL_CTX_new(TLSv1_method()); /* Set up context */
     else if (proto_version == PY_SSL_VERSION_SSL3)
         self->ctx = SSL_CTX_new(SSLv3_method()); /* Set up context */
+#ifndef OPENSSL_NO_SSL2
     else if (proto_version == PY_SSL_VERSION_SSL2)
         self->ctx = SSL_CTX_new(SSLv2_method()); /* Set up context */
+#endif
     else if (proto_version == PY_SSL_VERSION_SSL23)
         self->ctx = SSL_CTX_new(SSLv23_method()); /* Set up context */
     PySSL_END_ALLOW_THREADS
@@ -365,7 +369,8 @@ newPySSLObject(PySocketSockObject *Sock, char *key_file, char *cert_file,
     }
 
     /* ssl compatibility */
-    SSL_CTX_set_options(self->ctx, SSL_OP_ALL);
+    SSL_CTX_set_options(self->ctx,
+                        SSL_OP_ALL & ~SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS);
 
     verification_mode = SSL_VERIFY_NONE;
     if (certreq == PY_SSL_CERT_OPTIONAL)
@@ -639,15 +644,20 @@ _create_tuple_for_X509_NAME (X509_NAME *xname)
             goto fail1;
     }
     /* now, there's typically a dangling RDN */
-    if ((rdn != NULL) && (PyList_Size(rdn) > 0)) {
-        rdnt = PyList_AsTuple(rdn);
-        Py_DECREF(rdn);
-        if (rdnt == NULL)
-            goto fail0;
-        retcode = PyList_Append(dn, rdnt);
-        Py_DECREF(rdnt);
-        if (retcode < 0)
-            goto fail0;
+    if (rdn != NULL) {
+        if (PyList_GET_SIZE(rdn) > 0) {
+            rdnt = PyList_AsTuple(rdn);
+            Py_DECREF(rdn);
+            if (rdnt == NULL)
+                goto fail0;
+            retcode = PyList_Append(dn, rdnt);
+            Py_DECREF(rdnt);
+            if (retcode < 0)
+                goto fail0;
+        }
+        else {
+            Py_DECREF(rdn);
+        }
     }
 
     /* convert list to tuple */
@@ -698,7 +708,7 @@ _get_peer_alt_names (X509 *certificate) {
     /* get a memory buffer */
     biobuf = BIO_new(BIO_s_mem());
 
-    i = 0;
+    i = -1;
     while ((i = X509_get_ext_by_NID(
                     certificate, NID_subject_alt_name, i)) >= 0) {
 
@@ -794,6 +804,7 @@ _get_peer_alt_names (X509 *certificate) {
             }
             Py_DECREF(t);
         }
+        sk_GENERAL_NAME_pop_free(names, GENERAL_NAME_free);
     }
     BIO_free(biobuf);
     if (peer_alt_names != Py_None) {
@@ -1046,10 +1057,10 @@ static PyObject *PySSL_cipher (PySSLObject *self) {
     char *cipher_protocol;
 
     if (self->ssl == NULL)
-        return Py_None;
+        Py_RETURN_NONE;
     current = SSL_get_current_cipher(self->ssl);
     if (current == NULL)
-        return Py_None;
+        Py_RETURN_NONE;
 
     retval = PyTuple_New(3);
     if (retval == NULL)
@@ -1057,6 +1068,7 @@ static PyObject *PySSL_cipher (PySSLObject *self) {
 
     cipher_name = (char *) SSL_CIPHER_get_name(current);
     if (cipher_name == NULL) {
+        Py_INCREF(Py_None);
         PyTuple_SET_ITEM(retval, 0, Py_None);
     } else {
         v = PyString_FromString(cipher_name);
@@ -1066,6 +1078,7 @@ static PyObject *PySSL_cipher (PySSLObject *self) {
     }
     cipher_protocol = SSL_CIPHER_get_version(current);
     if (cipher_protocol == NULL) {
+        Py_INCREF(Py_None);
         PyTuple_SET_ITEM(retval, 1, Py_None);
     } else {
         v = PyString_FromString(cipher_protocol);
@@ -1139,10 +1152,8 @@ check_socket_and_wait_for_timeout(PySocketSockObject *s, int writing)
 #endif
 
     /* Guard against socket too large for select*/
-#ifndef Py_SOCKET_FD_CAN_BE_GE_FD_SETSIZE
-    if (s->sock_fd >= FD_SETSIZE)
+    if (!_PyIsSelectable_fd(s->sock_fd))
         return SOCKET_TOO_LARGE_FOR_SELECT;
-#endif
 
     /* Construct the arguments to select */
     tv.tv_sec = (int)s->sock_timeout;
@@ -1706,8 +1717,10 @@ init_ssl(void)
                             PY_SSL_CERT_REQUIRED);
 
     /* protocol versions */
+#ifndef OPENSSL_NO_SSL2
     PyModule_AddIntConstant(m, "PROTOCOL_SSLv2",
                             PY_SSL_VERSION_SSL2);
+#endif
     PyModule_AddIntConstant(m, "PROTOCOL_SSLv3",
                             PY_SSL_VERSION_SSL3);
     PyModule_AddIntConstant(m, "PROTOCOL_SSLv23",
