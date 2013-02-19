@@ -116,7 +116,7 @@ class FunctionTestCase(unittest.TestCase):
         self.assertEqual(result, 21)
         self.assertEqual(type(result), int)
 
-        # You cannot assign character format codes as restype any longer
+        # You cannot assing character format codes as restype any longer
         self.assertRaises(TypeError, setattr, f, "restype", "i")
 
     def test_floatresult(self):
@@ -250,7 +250,6 @@ class FunctionTestCase(unittest.TestCase):
     def test_callbacks(self):
         f = dll._testfunc_callback_i_if
         f.restype = c_int
-        f.argtypes = None
 
         MyCallback = CFUNCTYPE(c_int, c_int)
 

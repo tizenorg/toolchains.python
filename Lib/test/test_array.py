@@ -4,7 +4,6 @@
 """
 
 import unittest
-import warnings
 from test import test_support
 from weakref import proxy
 import array, cStringIO
@@ -15,7 +14,7 @@ class ArraySubclass(array.array):
 
 class ArraySubclassWithKwargs(array.array):
     def __init__(self, typecode, newarg=None):
-        array.array.__init__(self, typecode)
+        array.array.__init__(typecode)
 
 tests = [] # list to accumulate all tests
 typecodes = "cubBhHiIlLfd"
@@ -784,9 +783,7 @@ class BaseTest(unittest.TestCase):
 
     def test_subclass_with_kwargs(self):
         # SF bug #1486663 -- this used to erroneously raise a TypeError
-        with warnings.catch_warnings():
-            warnings.filterwarnings("ignore", '', DeprecationWarning)
-            ArraySubclassWithKwargs('b', newarg=1)
+        ArraySubclassWithKwargs('b', newarg=1)
 
 
 class StringTest(BaseTest):

@@ -1184,11 +1184,7 @@ csv_writerow(WriterObj *self, PyObject *seq)
         else {
             PyObject *str;
 
-            if (PyFloat_Check(field)) {
-                str = PyObject_Repr(field);
-            } else {
-                str = PyObject_Str(field);
-            }
+            str = PyObject_Str(field);
             Py_DECREF(field);
             if (str == NULL)
                 return NULL;

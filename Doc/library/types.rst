@@ -4,9 +4,6 @@
 .. module:: types
    :synopsis: Names for built-in types.
 
-**Source code:** :source:`Lib/types.py`
-
---------------
 
 This module defines names for some object types that are used by the standard
 Python interpreter, but not for the types defined by various extension modules.

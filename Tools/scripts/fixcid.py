@@ -188,7 +188,7 @@ def fix(filename):
     except os.error, msg:
         err(filename + ': rename failed (' + str(msg) + ')\n')
         return 1
-    # Return success
+    # Return succes
     return 0
 
 # Tokenizing ANSI C (partly)

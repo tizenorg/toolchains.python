@@ -1105,8 +1105,8 @@ to_int(int c)
     if (isdigit(c))
         return c - '0';
     else {
-        if (Py_ISUPPER(c))
-            c = Py_TOLOWER(c);
+        if (isupper(c))
+            c = tolower(c);
         if (c >= 'a' && c <= 'f')
             return c - 'a' + 10;
     }

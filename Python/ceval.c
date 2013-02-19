@@ -27,11 +27,10 @@
 
 typedef unsigned long long uint64;
 
-/* PowerPC support.
-   "__ppc__" appears to be the preprocessor definition to detect on OS X, whereas
-   "__powerpc__" appears to be the correct one for Linux with GCC
-*/
-#if defined(__ppc__) || defined (__powerpc__)
+#if defined(__ppc__) /* <- Don't know if this is the correct symbol; this
+                           section should work for GCC on any PowerPC
+                           platform, irrespective of OS.
+                           POWER?  Who knows :-) */
 
 #define READ_TIMESTAMP(var) ppc_getcounter(&var)
 
@@ -987,7 +986,7 @@ PyEval_EvalFrameEx(PyFrameObject *f, int throwflag)
         if (--_Py_Ticker < 0) {
             if (*next_instr == SETUP_FINALLY) {
                 /* Make the last opcode before
-                   a try: finally: block uninterruptible. */
+                   a try: finally: block uninterruptable. */
                 goto fast_next_opcode;
             }
             _Py_Ticker = _Py_CheckInterval;
@@ -3515,17 +3514,9 @@ do_raise(PyObject *type, PyObject *value, PyObject *tb)
         Py_DECREF(tmp);
     }
 
-    if (PyExceptionClass_Check(type)) {
+    if (PyExceptionClass_Check(type))
         PyErr_NormalizeException(&type, &value, &tb);
-        if (!PyExceptionInstance_Check(value)) {
-            PyErr_Format(PyExc_TypeError,
-                         "calling %s() should have returned an instance of "
-                         "BaseException, not '%s'",
-                         ((PyTypeObject *)type)->tp_name,
-                         Py_TYPE(value)->tp_name);
-            goto raise_error;
-        }
-    }
+
     else if (PyExceptionInstance_Check(type)) {
         /* Raising an instance.  The value should be a dummy. */
         if (value != Py_None) {

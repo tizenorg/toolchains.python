@@ -27,16 +27,12 @@ Glossary
       :ref:`2to3-reference`.
 
    abstract base class
-      Abstract base classes complement :term:`duck-typing` by
+      Abstract Base Classes (abbreviated ABCs) complement :term:`duck-typing` by
       providing a way to define interfaces when other techniques like
-      :func:`hasattr` would be clumsy or subtly wrong (for example with
-      :ref:`magic methods <new-style-special-lookup>`).  ABCs introduce virtual
-      subclasses, which are classes that don't inherit from a class but are
-      still recognized by :func:`isinstance` and :func:`issubclass`; see the
-      :mod:`abc` module documentation.  Python comes with many built-in ABCs for
+      :func:`hasattr` would be clumsy. Python comes with many built-in ABCs for
       data structures (in the :mod:`collections` module), numbers (in the
       :mod:`numbers` module), and streams (in the :mod:`io` module). You can
-      create your own ABCs with the :mod:`abc` module.
+      create your own ABC with the :mod:`abc` module.
 
    argument
       A value passed to a function or method, assigned to a named local
@@ -61,14 +57,11 @@ Glossary
 
    bytecode
       Python source code is compiled into bytecode, the internal representation
-      of a Python program in the CPython interpreter.  The bytecode is also
-      cached in ``.pyc`` and ``.pyo`` files so that executing the same file is
-      faster the second time (recompilation from source to bytecode can be
-      avoided).  This "intermediate language" is said to run on a
-      :term:`virtual machine` that executes the machine code corresponding to
-      each bytecode. Do note that bytecodes are not expected to work between
-      different Python virtual machines, nor to be stable between Python
-      releases.
+      of a Python program in the interpreter.  The bytecode is also cached in
+      ``.pyc`` and ``.pyo`` files so that executing the same file is faster the
+      second time (recompilation from source to bytecode can be avoided).  This
+      "intermediate language" is said to run on a :term:`virtual machine`
+      that executes the machine code corresponding to each bytecode.
 
       A list of bytecode instructions can be found in the documentation for
       :ref:`the dis module <bytecodes>`.
@@ -113,10 +106,9 @@ Glossary
       See :pep:`343`.
 
    CPython
-      The canonical implementation of the Python programming language, as
-      distributed on `python.org <http://python.org>`_.  The term "CPython"
-      is used when necessary to distinguish this implementation from others
-      such as Jython or IronPython.
+      The canonical implementation of the Python programming language.  The
+      term "CPython" is used in contexts when necessary to distinguish this
+      implementation from others such as Jython or IronPython.
 
    decorator
       A function returning another function, usually applied as a function
@@ -134,9 +126,8 @@ Glossary
          def f(...):
              ...
 
-      The same concept exists for classes, but is less commonly used there.  See
-      the documentation for :ref:`function definitions <function>` and
-      :ref:`class definitions <class>` for more about decorators.
+      See :ref:`the documentation for function definition <function>` for more
+      about decorators.
 
    descriptor
       Any *new-style* object which defines the methods :meth:`__get__`,
@@ -172,8 +163,8 @@ Glossary
       well-designed code improves its flexibility by allowing polymorphic
       substitution.  Duck-typing avoids tests using :func:`type` or
       :func:`isinstance`.  (Note, however, that duck-typing can be complemented
-      with :term:`abstract base classes <abstract base class>`.)  Instead, it
-      typically employs :func:`hasattr` tests or :term:`EAFP` programming.
+      with :term:`abstract base class`\ es.)  Instead, it typically employs
+      :func:`hasattr` tests or :term:`EAFP` programming.
 
    EAFP
       Easier to ask for forgiveness than permission.  This common Python coding
@@ -185,33 +176,16 @@ Glossary
 
    expression
       A piece of syntax which can be evaluated to some value.  In other words,
-      an expression is an accumulation of expression elements like literals,
-      names, attribute access, operators or function calls which all return a
-      value.  In contrast to many other languages, not all language constructs
-      are expressions.  There are also :term:`statement`\s which cannot be used
-      as expressions, such as :keyword:`print` or :keyword:`if`.  Assignments
-      are also statements, not expressions.
+      an expression is an accumulation of expression elements like literals, names,
+      attribute access, operators or function calls which all return a value.
+      In contrast to many other languages, not all language constructs are expressions.
+      There are also :term:`statement`\s which cannot be used as expressions,
+      such as :keyword:`print` or :keyword:`if`.  Assignments are also statements,
+      not expressions.
 
    extension module
-      A module written in C or C++, using Python's C API to interact with the
-      core and with user code.
-
-   file object
-      An object exposing a file-oriented API (with methods such as
-      :meth:`read()` or :meth:`write()`) to an underlying resource.  Depending
-      on the way it was created, a file object can mediate access to a real
-      on-disk file or to another other type of storage or communication device
-      (for example standard input/output, in-memory buffers, sockets, pipes,
-      etc.).  File objects are also called :dfn:`file-like objects` or
-      :dfn:`streams`.
-
-      There are actually three categories of file objects: raw binary files,
-      buffered binary files and text files.  Their interfaces are defined in the
-      :mod:`io` module.  The canonical way to create a file object is by using
-      the :func:`open` function.
-
-   file-like object
-      A synonym for :term:`file object`.
+      A module written in C or C++, using Python's C API to interact with the core and
+      with user code.
 
    finder
       An object that tries to find the :term:`loader` for a module. It must
@@ -279,25 +253,16 @@ Glossary
       See :term:`global interpreter lock`.
 
    global interpreter lock
-      The mechanism used by the :term:`CPython` interpreter to assure that
-      only one thread executes Python :term:`bytecode` at a time.
-      This simplifies the CPython implementation by making the object model
-      (including critical built-in types such as :class:`dict`) implicitly
-      safe against concurrent access.  Locking the entire interpreter
-      makes it easier for the interpreter to be multi-threaded, at the
-      expense of much of the parallelism afforded by multi-processor
-      machines.
-
-      However, some extension modules, either standard or third-party,
-      are designed so as to release the GIL when doing computationally-intensive
-      tasks such as compression or hashing.  Also, the GIL is always released
-      when doing I/O.
-
-      Past efforts to create a "free-threaded" interpreter (one which locks
-      shared data at a much finer granularity) have not been successful
-      because performance suffered in the common single-processor case. It
-      is believed that overcoming this performance issue would make the
-      implementation much more complicated and therefore costlier to maintain.
+      The lock used by Python threads to assure that only one thread
+      executes in the :term:`CPython` :term:`virtual machine` at a time.
+      This simplifies the CPython implementation by assuring that no two
+      processes can access the same memory at the same time.  Locking the
+      entire interpreter makes it easier for the interpreter to be
+      multi-threaded, at the expense of much of the parallelism afforded by
+      multi-processor machines.  Efforts have been made in the past to
+      create a "free-threaded" interpreter (one which locks shared data at a
+      much finer granularity), but so far none have been successful because
+      performance suffered in the common single-processor case.
 
    hashable
       An object is *hashable* if it has a hash value which never changes during
@@ -359,7 +324,7 @@ Glossary
       slowly.  See also :term:`interactive`.
 
    iterable
-      An object capable of returning its members one at a
+      A container object capable of returning its members one at a
       time. Examples of iterables include all sequence types (such as
       :class:`list`, :class:`str`, and :class:`tuple`) and some non-sequence
       types like :class:`dict` and :class:`file` and objects of any classes you
@@ -417,6 +382,26 @@ Glossary
       value is assigned.  ``**`` is used to accept or pass a dictionary of
       keyword arguments.  See :term:`argument`.
 
+   key function
+      A key function or collation function is a callable that returns a value
+      used for sorting or ordering.  For example, :func:`locale.strxfrm` is
+      used to produce a sort key that is aware of locale specific sort
+      conventions.
+
+      A number of tools in Python accept key functions to control how elements
+      are ordered or grouped.  They include :func:`min`, :func:`max`,
+      :func:`sorted`, :meth:`list.sort`, :func:`heapq.nsmallest`,
+      :func:`heapq.nlargest`, and :func:`itertools.groupby`.
+
+      There are several ways to create a key function.  For example. the
+      :meth:`str.lower` method can serve as a key function for case insensitive
+      sorts.  Alternatively, an ad-hoc key function can be built from a
+      :keyword:`lambda` expression such as ``lambda r: (r[0], r[2])``.  Also,
+      the :mod:`operator` module provides three key function constuctors:
+      :func:`~operator.attrgetter`, :func:`~operator.itemgetter`, and
+      :func:`~operator.methodcaller`.  See the :ref:`sortinghowto` for
+      examples of how to create and use key functions.
+
    lambda
       An anonymous inline function consisting of a single :term:`expression`
       which is evaluated when the function is called.  The syntax to create
@@ -427,12 +412,6 @@ Glossary
       pre-conditions before making calls or lookups.  This style contrasts with
       the :term:`EAFP` approach and is characterized by the presence of many
       :keyword:`if` statements.
-
-      In a multi-threaded environment, the LBYL approach can risk introducing a
-      race condition between "the looking" and "the leaping".  For example, the
-      code, ``if key in mapping: return mapping[key]`` can fail if another
-      thread removes *key* from *mapping* after the test, but before the lookup.
-      This issue can be solved with locks or by using the EAFP approach.
 
    list
       A built-in Python :term:`sequence`.  Despite its name it is more akin
@@ -453,12 +432,9 @@ Glossary
       :term:`finder`. See :pep:`302` for details.
 
    mapping
-      A container object that supports arbitrary key lookups and implements the
-      methods specified in the :class:`~collections.Mapping` or
-      :class:`~collections.MutableMapping`
-      :ref:`abstract base classes <collections-abstract-base-classes>`.  Examples
-      include :class:`dict`, :class:`collections.defaultdict`,
-      :class:`collections.OrderedDict` and :class:`collections.Counter`.
+      A container object (such as :class:`dict`) which supports arbitrary key
+      lookups using the special method :meth:`__getitem__`.  Mappings also
+      support :meth:`__len__`, :meth:`__iter__`, and :meth:`__contains__`.
 
    metaclass
       The class of a class.  Class definitions create a class name, a class
@@ -478,14 +454,6 @@ Glossary
       of an instance of that class, the method will get the instance object as
       its first :term:`argument` (which is usually called ``self``).
       See :term:`function` and :term:`nested scope`.
-
-   method resolution order
-      Method Resolution Order is the order in which base classes are searched
-      for a member during lookup. See `The Python 2.3 Method Resolution Order
-      <http://www.python.org/download/releases/2.3/mro/>`_.
-
-   MRO
-      See :term:`method resolution order`.
 
    mutable
       Mutable objects can change their value but keep their :func:`id`.  See
@@ -545,9 +513,9 @@ Glossary
       :term:`argument`.
 
    Python 3000
-      Nickname for the Python 3.x release line (coined long ago when the release
-      of version 3 was something in the distant future.)  This is also
-      abbreviated "Py3k".
+      Nickname for the next major Python version, 3.0 (coined long ago
+      when the release of version 3 was something in the distant future.)  This
+      is also abbreviated "Py3k".
 
    Pythonic
       An idea or piece of code which closely follows the most common idioms
@@ -570,7 +538,7 @@ Glossary
       object drops to zero, it is deallocated.  Reference counting is
       generally not visible to Python code, but it is a key element of the
       :term:`CPython` implementation.  The :mod:`sys` module defines a
-      :func:`~sys.getrefcount` function that programmers can call to return the
+      :func:`getrefcount` function that programmers can call to return the
       reference count for a particular object.
 
    __slots__
@@ -606,15 +574,7 @@ Glossary
    statement
       A statement is part of a suite (a "block" of code).  A statement is either
       an :term:`expression` or a one of several constructs with a keyword, such
-      as :keyword:`if`, :keyword:`while` or :keyword:`for`.
-
-   struct sequence
-      A tuple with named elements. Struct sequences expose an interface similiar
-      to :term:`named tuple` in that elements can either be accessed either by
-      index or as an attribute. However, they do not have any of the named tuple
-      methods like :meth:`~collections.somenamedtuple._make` or
-      :meth:`~collections.somenamedtuple._asdict`. Examples of struct sequences
-      include :data:`sys.float_info` and the return value of :func:`os.stat`.
+      as :keyword:`if`, :keyword:`while` or :keyword:`print`.
 
    triple-quoted string
       A string which is bound by three instances of either a quotation mark

@@ -1,3 +1,4 @@
+
 :mod:`repr` --- Alternate :func:`repr` implementation
 =====================================================
 
@@ -10,13 +11,14 @@
    :term:`2to3` tool will automatically adapt imports when converting your
    sources to 3.0.
 
-**Source code:** :source:`Lib/repr.py`
-
---------------
-
 The :mod:`repr` module provides a means for producing object representations
 with limits on the size of the resulting strings. This is used in the Python
 debugger and may be useful in other contexts as well.
+
+.. seealso::
+
+   Latest version of the `repr module Python source code
+   <http://svn.python.org/view/python/branches/release27-maint/Lib/repr.py?view=markup>`_
 
 This module provides a class, an instance, and a function:
 
@@ -47,7 +49,7 @@ This module provides a class, an instance, and a function:
 Repr Objects
 ------------
 
-:class:`Repr` instances provide several attributes which can be used to provide
+:class:`Repr` instances provide several members which can be used to provide
 size limits for the representations of different object types,  and methods
 which format specific object types.
 

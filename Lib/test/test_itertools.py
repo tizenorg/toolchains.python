@@ -137,8 +137,7 @@ class TestBasicOps(unittest.TestCase):
                 self.assertEqual(result, list(combinations2(values, r))) # matches second pure python version
                 self.assertEqual(result, list(combinations3(values, r))) # matches second pure python version
 
-    @test_support.impl_detail("tuple reuse is specific to CPython")
-    def test_combinations_tuple_reuse(self):
+        # Test implementation detail:  tuple re-use
         self.assertEqual(len(set(map(id, combinations('abcde', 3)))), 1)
         self.assertNotEqual(len(set(map(id, list(combinations('abcde', 3))))), 1)
 
@@ -208,9 +207,7 @@ class TestBasicOps(unittest.TestCase):
                 self.assertEqual(result, list(cwr1(values, r)))         # matches first pure python version
                 self.assertEqual(result, list(cwr2(values, r)))         # matches second pure python version
 
-    @test_support.impl_detail("tuple reuse is specific to CPython")
-    def test_combinations_with_replacement_tuple_reuse(self):
-        cwr = combinations_with_replacement
+        # Test implementation detail:  tuple re-use
         self.assertEqual(len(set(map(id, cwr('abcde', 3)))), 1)
         self.assertNotEqual(len(set(map(id, list(cwr('abcde', 3))))), 1)
 
@@ -274,8 +271,7 @@ class TestBasicOps(unittest.TestCase):
                     self.assertEqual(result, list(permutations(values, None))) # test r as None
                     self.assertEqual(result, list(permutations(values)))       # test default r
 
-    @test_support.impl_detail("tuple resuse is CPython specific")
-    def test_permutations_tuple_reuse(self):
+        # Test implementation detail:  tuple re-use
         self.assertEqual(len(set(map(id, permutations('abcde', 3)))), 1)
         self.assertNotEqual(len(set(map(id, list(permutations('abcde', 3))))), 1)
 
@@ -530,13 +526,11 @@ class TestBasicOps(unittest.TestCase):
         self.assertEqual(list(izip()), zip())
         self.assertRaises(TypeError, izip, 3)
         self.assertRaises(TypeError, izip, range(3), 3)
+        # Check tuple re-use (implementation detail)
         self.assertEqual([tuple(list(pair)) for pair in izip('abc', 'def')],
                          zip('abc', 'def'))
         self.assertEqual([pair for pair in izip('abc', 'def')],
                          zip('abc', 'def'))
-
-    @test_support.impl_detail("tuple reuse is specific to CPython")
-    def test_izip_tuple_resuse(self):
         ids = map(id, izip('abc', 'def'))
         self.assertEqual(min(ids), max(ids))
         ids = map(id, list(izip('abc', 'def')))
@@ -581,13 +575,11 @@ class TestBasicOps(unittest.TestCase):
             else:
                 self.fail('Did not raise Type in:  ' + stmt)
 
+        # Check tuple re-use (implementation detail)
         self.assertEqual([tuple(list(pair)) for pair in izip_longest('abc', 'def')],
                          zip('abc', 'def'))
         self.assertEqual([pair for pair in izip_longest('abc', 'def')],
                          zip('abc', 'def'))
-
-    @test_support.impl_detail("tuple reuse is specific to CPython")
-    def test_izip_longest_tuple_reuse(self):
         ids = map(id, izip_longest('abc', 'def'))
         self.assertEqual(min(ids), max(ids))
         ids = map(id, list(izip_longest('abc', 'def')))
@@ -691,8 +683,7 @@ class TestBasicOps(unittest.TestCase):
             args = map(iter, args)
             self.assertEqual(len(list(product(*args))), expected_len)
 
-    @test_support.impl_detail("tuple reuse is specific to CPython")
-    def test_product_tuple_reuse(self):
+        # Test implementation detail:  tuple re-use
         self.assertEqual(len(set(map(id, product('abc', 'def')))), 1)
         self.assertNotEqual(len(set(map(id, list(product('abc', 'def'))))), 1)
 
@@ -786,11 +777,6 @@ class TestBasicOps(unittest.TestCase):
         self.assertRaises(ValueError, islice, xrange(10), 'a', 1, 1)
         self.assertRaises(ValueError, islice, xrange(10), 1, 'a', 1)
         self.assertEqual(len(list(islice(count(), 1, 10, maxsize))), 1)
-
-        # Issue #10323:  Less islice in a predictable state
-        c = count()
-        self.assertEqual(list(islice(c, 1, 3, 50)), [1])
-        self.assertEqual(next(c), 3)
 
     def test_takewhile(self):
         data = [1, 3, 5, 20, 2, 4, 6, 8]
@@ -1484,7 +1470,7 @@ Samuele
 ...     return chain(iterable, repeat(None))
 
 >>> def ncycles(iterable, n):
-...     "Returns the sequence elements n times"
+...     "Returns the seqeuence elements n times"
 ...     return chain(*repeat(iterable, n))
 
 >>> def dotproduct(vec1, vec2):

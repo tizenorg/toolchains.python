@@ -380,6 +380,24 @@ join_list_unicode(PyObject *lst)
 }
 
 static PyObject *
+join_list_string(PyObject *lst)
+{
+    /* return ''.join(lst) */
+    static PyObject *joinfn = NULL;
+    if (joinfn == NULL) {
+        PyObject *ustr = PyString_FromStringAndSize(NULL, 0);
+        if (ustr == NULL)
+            return NULL;
+
+        joinfn = PyObject_GetAttrString(ustr, "join");
+        Py_DECREF(ustr);
+        if (joinfn == NULL)
+            return NULL;
+    }
+    return PyObject_CallFunctionObjArgs(joinfn, lst, NULL);
+}
+
+static PyObject *
 _build_rval_index_tuple(PyObject *rval, Py_ssize_t idx) {
     /* return (rval, idx) tuple, stealing reference to rval */
     PyObject *tpl;
@@ -577,7 +595,7 @@ scanstring_str(PyObject *pystr, Py_ssize_t end, char *encoding, int strict, Py_s
         Py_DECREF(chunk);
     }
 
-    rval = join_list_unicode(chunks);
+    rval = join_list_string(chunks);
     if (rval == NULL) {
         goto bail;
     }
@@ -1488,7 +1506,6 @@ scan_once_str(PyScannerObject *s, PyObject *pystr, Py_ssize_t idx, Py_ssize_t *n
 
     Returns a new PyObject representation of the term.
     */
-    PyObject *res;
     char *str = PyString_AS_STRING(pystr);
     Py_ssize_t length = PyString_GET_SIZE(pystr);
     if (idx >= length) {
@@ -1504,20 +1521,10 @@ scan_once_str(PyScannerObject *s, PyObject *pystr, Py_ssize_t idx, Py_ssize_t *n
                 next_idx_ptr);
         case '{':
             /* object */
-            if (Py_EnterRecursiveCall(" while decoding a JSON object "
-                                      "from a byte string"))
-                return NULL;
-            res = _parse_object_str(s, pystr, idx + 1, next_idx_ptr);
-            Py_LeaveRecursiveCall();
-            return res;
+            return _parse_object_str(s, pystr, idx + 1, next_idx_ptr);
         case '[':
             /* array */
-            if (Py_EnterRecursiveCall(" while decoding a JSON array "
-                                      "from a byte string"))
-                return NULL;
-            res = _parse_array_str(s, pystr, idx + 1, next_idx_ptr);
-            Py_LeaveRecursiveCall();
-            return res;
+            return _parse_array_str(s, pystr, idx + 1, next_idx_ptr);
         case 'n':
             /* null */
             if ((idx + 3 < length) && str[idx + 1] == 'u' && str[idx + 2] == 'l' && str[idx + 3] == 'l') {
@@ -1575,7 +1582,6 @@ scan_once_unicode(PyScannerObject *s, PyObject *pystr, Py_ssize_t idx, Py_ssize_
 
     Returns a new PyObject representation of the term.
     */
-    PyObject *res;
     Py_UNICODE *str = PyUnicode_AS_UNICODE(pystr);
     Py_ssize_t length = PyUnicode_GET_SIZE(pystr);
     if (idx >= length) {
@@ -1590,20 +1596,10 @@ scan_once_unicode(PyScannerObject *s, PyObject *pystr, Py_ssize_t idx, Py_ssize_
                 next_idx_ptr);
         case '{':
             /* object */
-            if (Py_EnterRecursiveCall(" while decoding a JSON object "
-                                      "from a unicode string"))
-                return NULL;
-            res = _parse_object_unicode(s, pystr, idx + 1, next_idx_ptr);
-            Py_LeaveRecursiveCall();
-            return res;
+            return _parse_object_unicode(s, pystr, idx + 1, next_idx_ptr);
         case '[':
             /* array */
-            if (Py_EnterRecursiveCall(" while decoding a JSON array "
-                                      "from a unicode string"))
-                return NULL;
-            res = _parse_array_unicode(s, pystr, idx + 1, next_idx_ptr);
-            Py_LeaveRecursiveCall();
-            return res;
+            return _parse_array_unicode(s, pystr, idx + 1, next_idx_ptr);
         case 'n':
             /* null */
             if ((idx + 3 < length) && str[idx + 1] == 'u' && str[idx + 2] == 'l' && str[idx + 3] == 'l') {
@@ -1725,15 +1721,8 @@ scanner_init(PyObject *self, PyObject *args, PyObject *kwds)
         Py_DECREF(s->encoding);
         s->encoding = tmp;
     }
-    if (s->encoding == NULL)
+    if (s->encoding == NULL || !PyString_Check(s->encoding))
         goto bail;
-    if (!PyString_Check(s->encoding)) {
-	PyErr_Format(PyExc_TypeError,
-		     "encoding must be a string, not %.80s",
-		     Py_TYPE(s->encoding)->tp_name);
-	goto bail;
-    }
-       
 
     /* All of these will fail "gracefully" so we don't need to verify them */
     s->strict = PyObject_GetAttrString(ctx, "strict");
@@ -1743,7 +1732,7 @@ scanner_init(PyObject *self, PyObject *args, PyObject *kwds)
     if (s->object_hook == NULL)
         goto bail;
     s->pairs_hook = PyObject_GetAttrString(ctx, "object_pairs_hook");
-    if (s->pairs_hook == NULL)
+    if (s->object_hook == NULL)
         goto bail;
     s->parse_float = PyObject_GetAttrString(ctx, "parse_float");
     if (s->parse_float == NULL)
@@ -2006,18 +1995,10 @@ encoder_listencode_obj(PyEncoderObject *s, PyObject *rval, PyObject *obj, Py_ssi
         return _steal_list_append(rval, encoded);
     }
     else if (PyList_Check(obj) || PyTuple_Check(obj)) {
-        if (Py_EnterRecursiveCall(" while encoding a JSON object"))
-            return -1;
-        rv = encoder_listencode_list(s, rval, obj, indent_level);
-        Py_LeaveRecursiveCall();
-        return rv;
+        return encoder_listencode_list(s, rval, obj, indent_level);
     }
     else if (PyDict_Check(obj)) {
-        if (Py_EnterRecursiveCall(" while encoding a JSON object"))
-            return -1;
-        rv = encoder_listencode_dict(s, rval, obj, indent_level);
-        Py_LeaveRecursiveCall();
-        return rv;
+        return encoder_listencode_dict(s, rval, obj, indent_level);
     }
     else {
         PyObject *ident = NULL;
@@ -2043,12 +2024,7 @@ encoder_listencode_obj(PyEncoderObject *s, PyObject *rval, PyObject *obj, Py_ssi
             Py_XDECREF(ident);
             return -1;
         }
-
-        if (Py_EnterRecursiveCall(" while encoding a JSON object"))
-            return -1;
         rv = encoder_listencode_obj(s, rval, newobj, indent_level);
-        Py_LeaveRecursiveCall();
-
         Py_DECREF(newobj);
         if (rv) {
             Py_XDECREF(ident);

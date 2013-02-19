@@ -209,8 +209,6 @@ class Cmd:
         if cmd is None:
             return self.default(line)
         self.lastcmd = line
-        if line == 'EOF' :
-            self.lastcmd = ''
         if cmd == '':
             return self.default(line)
         else:

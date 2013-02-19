@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# $Id$
+# $Id: tclock.py 46626 2006-06-03 23:07:21Z andrew.kuchling $
 #
 # From tclock.c, Copyright Howard Jones <ha.jones@ic.ac.uk>, September 1994.
 

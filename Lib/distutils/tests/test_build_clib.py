@@ -3,8 +3,6 @@ import unittest
 import os
 import sys
 
-from test.test_support import run_unittest
-
 from distutils.command.build_clib import build_clib
 from distutils.errors import DistutilsSetupError
 from distutils.tests import support
@@ -122,8 +120,7 @@ class BuildCLibTestCase(support.TempdirManager,
         # before we run the command, we want to make sure
         # all commands are present on the system
         # by creating a compiler and checking its executables
-        from distutils.ccompiler import new_compiler
-        from distutils.sysconfig import customize_compiler
+        from distutils.ccompiler import new_compiler, customize_compiler
 
         compiler = new_compiler()
         customize_compiler(compiler)
@@ -143,4 +140,4 @@ def test_suite():
     return unittest.makeSuite(BuildCLibTestCase)
 
 if __name__ == "__main__":
-    run_unittest(test_suite())
+    unittest.main(defaultTest="test_suite")

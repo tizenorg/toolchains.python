@@ -53,9 +53,7 @@ class Packer:
     def pack_uint(self, x):
         self.__buf.write(struct.pack('>L', x))
 
-    def pack_int(self, x):
-        self.__buf.write(struct.pack('>l', x))
-
+    pack_int = pack_uint
     pack_enum = pack_int
 
     def pack_bool(self, x):

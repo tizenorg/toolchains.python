@@ -1,7 +1,6 @@
 from test import test_support
 import unittest
 import codecs
-import locale
 import sys, StringIO, _testcapi
 
 class Queue(object):
@@ -470,11 +469,13 @@ class UTF16Test(ReadTest):
         s1 = u'Hello\r\nworld\r\n'
 
         s = s1.encode(self.encoding)
-        self.addCleanup(test_support.unlink, test_support.TESTFN)
-        with open(test_support.TESTFN, 'wb') as fp:
-            fp.write(s)
-        with codecs.open(test_support.TESTFN, 'U', encoding=self.encoding) as reader:
-            self.assertEqual(reader.read(), s1)
+        try:
+            with open(test_support.TESTFN, 'wb') as fp:
+                fp.write(s)
+            with codecs.open(test_support.TESTFN, 'U', encoding=self.encoding) as reader:
+                self.assertEqual(reader.read(), s1)
+        finally:
+            test_support.unlink(test_support.TESTFN)
 
 class UTF16LETest(ReadTest):
     encoding = "utf-16-le"
@@ -1154,19 +1155,6 @@ class CodecsModuleTest(unittest.TestCase):
         self.assertRaises(TypeError, codecs.getwriter)
         self.assertRaises(LookupError, codecs.getwriter, "__spam__")
 
-    def test_lookup_issue1813(self):
-        # Issue #1813: under Turkish locales, lookup of some codecs failed
-        # because 'I' is lowercased as a dotless "i"
-        oldlocale = locale.getlocale(locale.LC_CTYPE)
-        self.addCleanup(locale.setlocale, locale.LC_CTYPE, oldlocale)
-        try:
-            locale.setlocale(locale.LC_CTYPE, 'tr_TR')
-        except locale.Error:
-            # Unsupported locale on this system
-            self.skipTest('test needs Turkish locale')
-        c = codecs.lookup('ASCII')
-        self.assertEqual(c.name, 'ascii')
-
 class StreamReaderTest(unittest.TestCase):
 
     def setUp(self):
@@ -1544,7 +1532,6 @@ class BomTest(unittest.TestCase):
                  "utf-32",
                  "utf-32-le",
                  "utf-32-be")
-        self.addCleanup(test_support.unlink, test_support.TESTFN)
         for encoding in tests:
             # Check if the BOM is written only once
             with codecs.open(test_support.TESTFN, 'w+', encoding=encoding) as f:

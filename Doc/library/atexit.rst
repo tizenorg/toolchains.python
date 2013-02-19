@@ -1,3 +1,4 @@
+
 :mod:`atexit` --- Exit handlers
 ===============================
 
@@ -9,15 +10,14 @@
 
 .. versionadded:: 2.0
 
-**Source code:** :source:`Lib/atexit.py`
-
---------------
-
 The :mod:`atexit` module defines a single function to register cleanup
 functions.  Functions thus registered are automatically executed upon normal
-interpreter termination.  The order in which the functions are called is not
-defined; if you have cleanup operations that depend on each other, you should
-wrap them in a function and register that one.  This keeps :mod:`atexit` simple.
+interpreter termination.
+
+.. seealso::
+
+   Latest version of the `atexit Python source code
+   <http://svn.python.org/view/python/branches/release27-maint/Lib/atexit.py?view=markup>`_
 
 Note: the functions registered via this module are not called when the program
 is killed by a signal not handled by Python, when a Python fatal internal error
@@ -26,7 +26,7 @@ is detected, or when :func:`os._exit` is called.
 .. index:: single: exitfunc (in sys)
 
 This is an alternate interface to the functionality provided by the
-:func:`sys.exitfunc` variable.
+``sys.exitfunc`` variable.
 
 Note: This module is unlikely to work correctly when used with other code that
 sets ``sys.exitfunc``.  In particular, other core Python modules are free to use
@@ -40,8 +40,7 @@ simplest way to convert code that sets ``sys.exitfunc`` is to import
 
    Register *func* as a function to be executed at termination.  Any optional
    arguments that are to be passed to *func* must be passed as arguments to
-   :func:`register`.  It is possible to register the same function and arguments
-   more than once.
+   :func:`register`.
 
    At normal program termination (for instance, if :func:`sys.exit` is called or
    the main module's execution completes), all functions registered are called in
@@ -55,8 +54,8 @@ simplest way to convert code that sets ``sys.exitfunc`` is to import
    be raised is re-raised.
 
    .. versionchanged:: 2.6
-      This function now returns *func*, which makes it possible to use it as a
-      decorator.
+      This function now returns *func* which makes it possible to use it as a
+      decorator without binding the original name to ``None``.
 
 
 .. seealso::
@@ -110,4 +109,5 @@ Usage as a :term:`decorator`::
    def goodbye():
        print "You are now leaving the Python sector."
 
-This only works with functions that can be called without arguments.
+This obviously only works with functions that don't take arguments.
+

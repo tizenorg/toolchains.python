@@ -4,9 +4,6 @@
 .. module:: __future__
    :synopsis: Future statement definitions
 
-**Source code:** :source:`Lib/__future__.py`
-
---------------
 
 :mod:`__future__` is a real module, and serves three purposes:
 

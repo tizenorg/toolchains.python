@@ -190,7 +190,8 @@ class AutoComplete:
                     bigl = eval("dir()", namespace)
                     bigl.sort()
                     if "__all__" in bigl:
-                        smalll = sorted(eval("__all__", namespace))
+                        smalll = eval("__all__", namespace)
+                        smalll.sort()
                     else:
                         smalll = [s for s in bigl if s[:1] != '_']
                 else:
@@ -199,7 +200,8 @@ class AutoComplete:
                         bigl = dir(entity)
                         bigl.sort()
                         if "__all__" in bigl:
-                            smalll = sorted(entity.__all__)
+                            smalll = entity.__all__
+                            smalll.sort()
                         else:
                             smalll = [s for s in bigl if s[:1] != '_']
                     except:

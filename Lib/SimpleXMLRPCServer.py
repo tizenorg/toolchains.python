@@ -246,7 +246,7 @@ class SimpleXMLRPCDispatcher:
         marshalled data. For backwards compatibility, a dispatch
         function can be provided as an argument (see comment in
         SimpleXMLRPCRequestHandler.do_POST) but overriding the
-        existing method through subclassing is the preferred means
+        existing method through subclassing is the prefered means
         of changing method dispatch behavior.
         """
 
@@ -486,10 +486,7 @@ class SimpleXMLRPCRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             L = []
             while size_remaining:
                 chunk_size = min(size_remaining, max_chunk_size)
-                chunk = self.rfile.read(chunk_size)
-                if not chunk:
-                    break
-                L.append(chunk)
+                L.append(self.rfile.read(chunk_size))
                 size_remaining -= len(L[-1])
             data = ''.join(L)
 

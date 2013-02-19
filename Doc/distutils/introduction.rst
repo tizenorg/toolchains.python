@@ -79,17 +79,11 @@ Some observations:
   for an example)
 
 To create a source distribution for this module, you would create a setup
-script, :file:`setup.py`, containing the above code, and run this command from a
-terminal::
+script, :file:`setup.py`, containing the above code, and run::
 
    python setup.py sdist
 
-For Windows, open a command prompt windows (:menuselection:`Start -->
-Accessories`) and change the command to::
-
-   setup.py sdist
-
-:command:`sdist` will create an archive file (e.g., tarball on Unix, ZIP file on Windows)
+which will create an archive file (e.g., tarball on Unix, ZIP file on Windows)
 containing your setup script :file:`setup.py`, and your module :file:`foo.py`.
 The archive file will be named :file:`foo-1.0.tar.gz` (or :file:`.zip`), and
 will unpack into a directory :file:`foo-1.0`.

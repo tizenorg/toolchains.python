@@ -20,8 +20,6 @@ but they are available on most other systems as well.  Here's an overview:
    optparse.rst
    getopt.rst
    logging.rst
-   logging.config.rst
-   logging.handlers.rst
    getpass.rst
    curses.rst
    curses.ascii.rst

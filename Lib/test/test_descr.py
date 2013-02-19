@@ -876,7 +876,7 @@ class ClassPropertiesAndMethods(unittest.TestCase):
     # see "A Monotonic Superclass Linearization for Dylan",
     # by Kim Barrett et al. (OOPSLA 1996)
     def test_consistency_with_epg(self):
-        # Testing consistency with EPG...
+        # Testing consistentcy with EPG...
         class Pane(object): pass
         class ScrollingMixin(object): pass
         class EditingMixin(object): pass
@@ -1718,7 +1718,6 @@ order (MRO) for bases """
             ("__exit__", run_context, swallow, set(), {"__enter__" : iden}),
             ("__complex__", complex, complex_num, set(), {}),
             ("__format__", format, format_impl, set(), {}),
-            ("__dir__", dir, empty_seq, set(), {}),
             ]
 
         class Checker(object):
@@ -4283,7 +4282,7 @@ order (MRO) for bases """
         except TypeError:
             pass
         else:
-            self.fail("Carlo Verre __setattr__ succeeded!")
+            self.fail("Carlo Verre __setattr__ suceeded!")
         try:
             object.__delattr__(str, "lower")
         except TypeError:
@@ -4554,41 +4553,6 @@ order (MRO) for bases """
 
         self.assertRaises(AttributeError, getattr, EvilGetattribute(), "attr")
 
-    def test_abstractmethods(self):
-        # type pretends not to have __abstractmethods__.
-        self.assertRaises(AttributeError, getattr, type, "__abstractmethods__")
-        class meta(type):
-            pass
-        self.assertRaises(AttributeError, getattr, meta, "__abstractmethods__")
-        class X(object):
-            pass
-        with self.assertRaises(AttributeError):
-            del X.__abstractmethods__
-
-    def test_proxy_call(self):
-        class FakeStr(object):
-            __class__ = str
-
-        fake_str = FakeStr()
-        # isinstance() reads __class__ on new style classes
-        self.assertTrue(isinstance(fake_str, str))
-
-        # call a method descriptor
-        with self.assertRaises(TypeError):
-            str.split(fake_str)
-
-        # call a slot wrapper descriptor
-        with self.assertRaises(TypeError):
-            str.__add__(fake_str, "abc")
-
-    def test_repr_as_str(self):
-        # Issue #11603: crash or infinite loop when rebinding __str__ as
-        # __repr__.
-        class Foo(object):
-            pass
-        Foo.__repr__ = Foo.__str__
-        foo = Foo()
-        str(foo)
 
 class DictProxyTests(unittest.TestCase):
     def setUp(self):
@@ -4596,10 +4560,6 @@ class DictProxyTests(unittest.TestCase):
             def meth(self):
                 pass
         self.C = C
-
-    def test_repr(self):
-        self.assertIn('dict_proxy({', repr(vars(self.C)))
-        self.assertIn("'meth':", repr(vars(self.C)))
 
     def test_iter_keys(self):
         # Testing dict-proxy iterkeys...

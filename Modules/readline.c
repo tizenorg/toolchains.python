@@ -865,14 +865,6 @@ setup_readline(void)
         Py_FatalError("not enough memory to save locale");
 #endif
 
-#ifdef __APPLE__
-    /* the libedit readline emulation resets key bindings etc 
-     * when calling rl_initialize.  So call it upfront
-     */
-    if (using_libedit_emulation)
-        rl_initialize();
-#endif /* __APPLE__ */
-
     using_history();
 
     rl_readline_name = "python";
@@ -904,13 +896,8 @@ setup_readline(void)
      * XXX: A bug in the readline-2.2 library causes a memory leak
      * inside this function.  Nothing we can do about it.
      */
-#ifdef __APPLE__
-    if (using_libedit_emulation)
-	rl_read_init_file(NULL);
-    else
-#endif /* __APPLE__ */
-        rl_initialize();
-    
+    rl_initialize();
+
     RESTORE_LOCALE(saved_locale)
 }
 

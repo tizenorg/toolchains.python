@@ -1,3 +1,4 @@
+
 :mod:`zipfile` --- Work with ZIP archives
 =========================================
 
@@ -7,10 +8,6 @@
 .. sectionauthor:: James C. Ahlstrom <jim@interet.com>
 
 .. versionadded:: 1.6
-
-**Source code:** :source:`Lib/zipfile.py`
-
---------------
 
 The ZIP file format is a common archive and compression standard. This module
 provides tools to create, read, write, append, and list a ZIP file.  Any
@@ -126,10 +123,9 @@ ZipFile Objects
    and :program:`unzip` commands on Unix (the InfoZIP utilities) don't support
    these extensions.
 
-   .. versionchanged:: 2.7.1
-      If the file is created with mode ``'a'`` or ``'w'`` and then
-      :meth:`close`\ d without adding any files to the archive, the appropriate
-      ZIP structures for an empty archive will be written to the file.
+   If the file is created with mode ``'a'`` or ``'w'`` and then
+   :meth:`close`\ d without adding any files to the archive, the appropriate
+   ZIP structures for an empty archive will be written to the file.
 
    ZipFile is also a context manager and therefore supports the
    :keyword:`with` statement.  In the example, *myzip* is closed after the
@@ -179,8 +175,8 @@ ZipFile Objects
    .. note::
 
       The file-like object is read-only and provides the following methods:
-      :meth:`!read`, :meth:`!readline`, :meth:`!readlines`, :meth:`!__iter__`,
-      :meth:`!next`.
+      :meth:`read`, :meth:`readline`, :meth:`readlines`, :meth:`__iter__`,
+      :meth:`next`.
 
    .. note::
 
@@ -306,7 +302,7 @@ ZipFile Objects
 
    .. note::
 
-      When passing a :class:`ZipInfo` instance as the *zinfo_or_arcname* parameter,
+      When passing a :class:`ZipInfo` instance as the *zinfo_or_acrname* parameter,
       the compression method used will be that specified in the *compress_type*
       member of the given :class:`ZipInfo` instance.  By default, the
       :class:`ZipInfo` constructor sets this member to :const:`ZIP_STORED`.
@@ -388,7 +384,7 @@ Instances have the following attributes:
    +-------+--------------------------+
    | Index | Value                    |
    +=======+==========================+
-   | ``0`` | Year (>= 1980)           |
+   | ``0`` | Year                     |
    +-------+--------------------------+
    | ``1`` | Month (one-based)        |
    +-------+--------------------------+
@@ -400,10 +396,6 @@ Instances have the following attributes:
    +-------+--------------------------+
    | ``5`` | Seconds (zero-based)     |
    +-------+--------------------------+
-
-   .. note::
-
-      The ZIP file format does not support timestamps before 1980.
 
 
 .. attribute:: ZipInfo.compress_type

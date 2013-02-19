@@ -478,12 +478,8 @@ class Formatter(object):
             except UnicodeError:
                 # Sometimes filenames have non-ASCII chars, which can lead
                 # to errors when s is Unicode and record.exc_text is str
-                # See issue 8924.
-                # We also use replace for when there are multiple
-                # encodings, e.g. UTF-8 for the filesystem and latin-1
-                # for a script. See issue 13232.
-                s = s + record.exc_text.decode(sys.getfilesystemencoding(),
-                                               'replace')
+                # See issue 8924
+                s = s + record.exc_text.decode(sys.getfilesystemencoding())
         return s
 
 #
@@ -794,7 +790,7 @@ class Handler(Filterer):
         You could, however, replace this with a custom handler if you wish.
         The record which was being processed is passed in to this method.
         """
-        if raiseExceptions and sys.stderr:  # see issue 13807
+        if raiseExceptions:
             ei = sys.exc_info()
             try:
                 traceback.print_exception(ei[0], ei[1], ei[2],
@@ -1007,10 +1003,6 @@ class Manager(object):
         placeholder to now point to the logger.
         """
         rv = None
-        if not isinstance(name, basestring):
-            raise TypeError('A logger name must be string or Unicode')
-        if isinstance(name, unicode):
-            name = name.encode('utf-8')
         _acquireLock()
         try:
             if name in self.loggerDict:
@@ -1635,7 +1627,6 @@ def shutdown(handlerList=_handlerList):
             h = wr()
             if h:
                 try:
-                    h.acquire()
                     h.flush()
                     h.close()
                 except (IOError, ValueError):
@@ -1644,8 +1635,6 @@ def shutdown(handlerList=_handlerList):
                     # references to them are still around at
                     # application exit.
                     pass
-                finally:
-                    h.release()
         except:
             if raiseExceptions:
                 raise

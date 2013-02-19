@@ -2,7 +2,7 @@
 import unittest
 import os
 import time
-from test.test_support import captured_stdout, run_unittest
+from test.test_support import captured_stdout
 
 from distutils.spawn import _nt_quote_args
 from distutils.spawn import spawn, find_executable
@@ -57,4 +57,4 @@ def test_suite():
     return unittest.makeSuite(SpawnTestCase)
 
 if __name__ == "__main__":
-    run_unittest(test_suite())
+    unittest.main(defaultTest="test_suite")

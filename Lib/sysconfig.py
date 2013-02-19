@@ -176,9 +176,8 @@ def _getuserbase():
     if sys.platform == "darwin":
         framework = get_config_var("PYTHONFRAMEWORK")
         if framework:
-            return env_base if env_base else \
-                               joinuser("~", "Library", framework, "%d.%d"
-                                            % (sys.version_info[:2]))
+            return joinuser("~", "Library", framework, "%d.%d"%(
+                sys.version_info[:2]))
 
     return env_base if env_base else joinuser("~", ".local")
 
@@ -272,7 +271,7 @@ def _parse_makefile(filename, vars=None):
 def _get_makefile_filename():
     if _PYTHON_BUILD:
         return os.path.join(_PROJECT_BASE, "Makefile")
-    return os.path.join(get_path('platstdlib'), "config", "Makefile")
+    return os.path.join(get_path('stdlib'), "config", "Makefile")
 
 
 def _init_posix(vars):
@@ -297,6 +296,21 @@ def _init_posix(vars):
         if hasattr(e, "strerror"):
             msg = msg + " (%s)" % e.strerror
         raise IOError(msg)
+
+    # On MacOSX we need to check the setting of the environment variable
+    # MACOSX_DEPLOYMENT_TARGET: configure bases some choices on it so
+    # it needs to be compatible.
+    # If it isn't set we set it to the configure-time value
+    if sys.platform == 'darwin' and 'MACOSX_DEPLOYMENT_TARGET' in vars:
+        cfg_target = vars['MACOSX_DEPLOYMENT_TARGET']
+        cur_target = os.getenv('MACOSX_DEPLOYMENT_TARGET', '')
+        if cur_target == '':
+            cur_target = cfg_target
+            os.putenv('MACOSX_DEPLOYMENT_TARGET', cfg_target)
+        elif map(int, cfg_target.split('.')) > map(int, cur_target.split('.')):
+            msg = ('$MACOSX_DEPLOYMENT_TARGET mismatch: now "%s" but "%s" '
+                   'during configure' % (cur_target, cfg_target))
+            raise IOError(msg)
 
     # On AIX, there are wrong paths to the linker scripts in the Makefile
     # -- these paths are relative to the Python source, but when installed
@@ -583,11 +597,6 @@ def get_platform():
         if release[0] >= "5":           # SunOS 5 == Solaris 2
             osname = "solaris"
             release = "%d.%s" % (int(release[0]) - 3, release[2:])
-            # We can't use "platform.architecture()[0]" because a
-            # bootstrap problem. We use a dict to get an error
-            # if some suspicious happens.
-            bitness = {2147483647:"32bit", 9223372036854775807:"64bit"}
-            machine += ".%s" % bitness[sys.maxint]
         # fall through to standard osname-release-machine representation
     elif osname[:4] == "irix":              # could be "irix64"!
         return "%s-%s" % (osname, release)
@@ -607,7 +616,9 @@ def get_platform():
         # machine is going to compile and link as if it were
         # MACOSX_DEPLOYMENT_TARGET.
         cfgvars = get_config_vars()
-        macver = cfgvars.get('MACOSX_DEPLOYMENT_TARGET')
+        macver = os.environ.get('MACOSX_DEPLOYMENT_TARGET')
+        if not macver:
+            macver = cfgvars.get('MACOSX_DEPLOYMENT_TARGET')
 
         if 1:
             # Always calculate the release of the running machine,
@@ -628,6 +639,7 @@ def get_platform():
                     m = re.search(
                             r'<key>ProductUserVisibleVersion</key>\s*' +
                             r'<string>(.*?)</string>', f.read())
+                    f.close()
                     if m is not None:
                         macrelease = '.'.join(m.group(1).split('.')[:2])
                     # else: fall back to the default behaviour

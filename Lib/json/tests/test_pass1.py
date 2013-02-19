@@ -1,5 +1,6 @@
-from json.tests import PyTest, CTest
+from unittest import TestCase
 
+import json
 
 # from http://json.org/JSON_checker/test/pass1.json
 JSON = r'''
@@ -61,19 +62,15 @@ JSON = r'''
 ,"rosebud"]
 '''
 
-class TestPass1(object):
+class TestPass1(TestCase):
     def test_parse(self):
         # test in/out equivalence and parsing
-        res = self.loads(JSON)
-        out = self.dumps(res)
-        self.assertEqual(res, self.loads(out))
+        res = json.loads(JSON)
+        out = json.dumps(res)
+        self.assertEqual(res, json.loads(out))
         try:
-            self.dumps(res, allow_nan=False)
+            json.dumps(res, allow_nan=False)
         except ValueError:
             pass
         else:
             self.fail("23456789012E666 should be out of range")
-
-
-class TestPyPass1(TestPass1, PyTest): pass
-class TestCPass1(TestPass1, CTest): pass

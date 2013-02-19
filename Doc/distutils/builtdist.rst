@@ -88,6 +88,8 @@ The available formats for built distributions are:
 +-------------+------------------------------+---------+
 | ``sdux``    | HP-UX :program:`swinstall`   |         |
 +-------------+------------------------------+---------+
+| ``rpm``     | RPM                          | \(5)    |
++-------------+------------------------------+---------+
 | ``wininst`` | self-extracting ZIP file for | \(4)    |
 |             | Windows                      |         |
 +-------------+------------------------------+---------+
@@ -426,7 +428,7 @@ built-in functions in the installation script.
 
    Which folders are available depends on the exact Windows version, and probably
    also the configuration.  For details refer to Microsoft's documentation of the
-   :c:func:`SHGetSpecialFolderPath` function.
+   :cfunc:`SHGetSpecialFolderPath` function.
 
 
 .. function:: create_shortcut(target, description, filename[, arguments[, workdir[, iconpath[, iconindex]]]])

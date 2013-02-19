@@ -32,6 +32,10 @@ static PyObject *interned;
 #define PyStringObject_SIZE (offsetof(PyStringObject, ob_sval) + 1)
 
 /*
+   For both PyString_FromString() and PyString_FromStringAndSize(), the
+   parameter `size' denotes number of characters to allocate, not counting any
+   null terminating character.
+
    For PyString_FromString(), the parameter `str' points to a null-terminated
    string containing exactly `size' bytes.
 
@@ -48,8 +52,8 @@ static PyObject *interned;
 
    The PyObject member `op->ob_size', which denotes the number of "extra
    items" in a variable-size object, will contain the number of bytes
-   allocated for string data, not counting the null terminating character.
-   It is therefore equal to the `size' parameter (for
+   allocated for string data, not counting the null terminating character.  It
+   is therefore equal to the equal to the `size' parameter (for
    PyString_FromStringAndSize()) or the length of the string in the `str'
    parameter (for PyString_FromString()).
 */
@@ -740,7 +744,7 @@ PyObject *PyString_DecodeEscape(const char *s,
         default:
             *p++ = '\\';
             s--;
-            goto non_esc; /* an arbitrary number of unescaped
+            goto non_esc; /* an arbitry number of unescaped
                              UTF-8 bytes may follow. */
         }
     }
@@ -1262,27 +1266,14 @@ string_hash(PyStringObject *a)
     register unsigned char *p;
     register long x;
 
-#ifdef Py_DEBUG
-    assert(_Py_HashSecret_Initialized);
-#endif
     if (a->ob_shash != -1)
         return a->ob_shash;
     len = Py_SIZE(a);
-    /*
-      We make the hash of the empty string be 0, rather than using
-      (prefix ^ suffix), since this slightly obfuscates the hash secret
-    */
-    if (len == 0) {
-        a->ob_shash = 0;
-        return 0;
-    }
     p = (unsigned char *) a->ob_sval;
-    x = _Py_HashSecret.prefix;
-    x ^= *p << 7;
+    x = *p << 7;
     while (--len >= 0)
         x = (1000003*x) ^ *p++;
     x ^= Py_SIZE(a);
-    x ^= _Py_HashSecret.suffix;
     if (x == -1)
         x = -2;
     a->ob_shash = x;
@@ -1706,9 +1697,19 @@ string_find_internal(PyStringObject *self, PyObject *args, int dir)
     const char *sub;
     Py_ssize_t sub_len;
     Py_ssize_t start=0, end=PY_SSIZE_T_MAX;
+    PyObject *obj_start=Py_None, *obj_end=Py_None;
 
-    if (!stringlib_parse_args_finds("find/rfind/index/rindex",
-                                    args, &subobj, &start, &end))
+    if (!PyArg_ParseTuple(args, "O|OO:find/rfind/index/rindex", &subobj,
+        &obj_start, &obj_end))
+        return -2;
+    /* To support None in "start" and "end" arguments, meaning
+       the same as if they were not passed.
+    */
+    if (obj_start != Py_None)
+        if (!_PyEval_SliceIndex(obj_start, &start))
+        return -2;
+    if (obj_end != Py_None)
+        if (!_PyEval_SliceIndex(obj_end, &end))
         return -2;
 
     if (PyString_Check(subobj)) {
@@ -1740,7 +1741,7 @@ PyDoc_STRVAR(find__doc__,
 "S.find(sub [,start [,end]]) -> int\n\
 \n\
 Return the lowest index in S where substring sub is found,\n\
-such that sub is contained within S[start:end].  Optional\n\
+such that sub is contained within s[start:end].  Optional\n\
 arguments start and end are interpreted as in slice notation.\n\
 \n\
 Return -1 on failure.");
@@ -1779,7 +1780,7 @@ PyDoc_STRVAR(rfind__doc__,
 "S.rfind(sub [,start [,end]]) -> int\n\
 \n\
 Return the highest index in S where substring sub is found,\n\
-such that sub is contained within S[start:end].  Optional\n\
+such that sub is contained within s[start:end].  Optional\n\
 arguments start and end are interpreted as in slice notation.\n\
 \n\
 Return -1 on failure.");
@@ -2120,7 +2121,8 @@ string_count(PyStringObject *self, PyObject *args)
     Py_ssize_t sub_len;
     Py_ssize_t start = 0, end = PY_SSIZE_T_MAX;
 
-    if (!stringlib_parse_args_finds("count", args, &sub_obj, &start, &end))
+    if (!PyArg_ParseTuple(args, "O|O&O&:count", &sub_obj,
+        _PyEval_SliceIndex, &start, _PyEval_SliceIndex, &end))
         return NULL;
 
     if (PyString_Check(sub_obj)) {
@@ -2186,9 +2188,7 @@ PyDoc_STRVAR(translate__doc__,
 Return a copy of the string S, where all characters occurring\n\
 in the optional argument deletechars are removed, and the\n\
 remaining characters have been mapped through the given\n\
-translation table, which must be a string of length 256 or None.\n\
-If the table argument is None, no translation is applied and\n\
-the operation simply removes the characters in deletechars.");
+translation table, which must be a string of length 256.");
 
 static PyObject *
 string_translate(PyStringObject *self, PyObject *args)
@@ -2916,7 +2916,8 @@ string_startswith(PyStringObject *self, PyObject *args)
     PyObject *subobj;
     int result;
 
-    if (!stringlib_parse_args_finds("startswith", args, &subobj, &start, &end))
+    if (!PyArg_ParseTuple(args, "O|O&O&:startswith", &subobj,
+        _PyEval_SliceIndex, &start, _PyEval_SliceIndex, &end))
         return NULL;
     if (PyTuple_Check(subobj)) {
         Py_ssize_t i;
@@ -2933,12 +2934,8 @@ string_startswith(PyStringObject *self, PyObject *args)
         Py_RETURN_FALSE;
     }
     result = _string_tailmatch(self, subobj, start, end, -1);
-    if (result == -1) {
-        if (PyErr_ExceptionMatches(PyExc_TypeError))
-            PyErr_Format(PyExc_TypeError, "startswith first arg must be str, "
-                         "unicode, or tuple, not %s", Py_TYPE(subobj)->tp_name);
+    if (result == -1)
         return NULL;
-    }
     else
         return PyBool_FromLong(result);
 }
@@ -2960,7 +2957,8 @@ string_endswith(PyStringObject *self, PyObject *args)
     PyObject *subobj;
     int result;
 
-    if (!stringlib_parse_args_finds("endswith", args, &subobj, &start, &end))
+    if (!PyArg_ParseTuple(args, "O|O&O&:endswith", &subobj,
+        _PyEval_SliceIndex, &start, _PyEval_SliceIndex, &end))
         return NULL;
     if (PyTuple_Check(subobj)) {
         Py_ssize_t i;
@@ -2977,12 +2975,8 @@ string_endswith(PyStringObject *self, PyObject *args)
         Py_RETURN_FALSE;
     }
     result = _string_tailmatch(self, subobj, start, end, +1);
-    if (result == -1) {
-        if (PyErr_ExceptionMatches(PyExc_TypeError))
-            PyErr_Format(PyExc_TypeError, "endswith first arg must be str, "
-                         "unicode, or tuple, not %s", Py_TYPE(subobj)->tp_name);
+    if (result == -1)
         return NULL;
-    }
     else
         return PyBool_FromLong(result);
 }

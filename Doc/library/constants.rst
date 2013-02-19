@@ -1,5 +1,3 @@
-.. _built-in-consts:
-
 Built-in Constants
 ==================
 

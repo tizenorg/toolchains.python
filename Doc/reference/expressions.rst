@@ -347,7 +347,7 @@ A string conversion is an expression list enclosed in reverse (a.k.a. backward)
 quotes:
 
 .. productionlist::
-   string_conversion: "`" `expression_list` "`"
+   string_conversion: "'" `expression_list` "'"
 
 A string conversion evaluates the contained expression list and converts the
 resulting object into a string according to rules specific to its type.
@@ -719,7 +719,7 @@ the call.
    An implementation may provide built-in functions whose positional parameters
    do not have names, even if they are 'named' for the purpose of documentation,
    and which therefore cannot be supplied by keyword.  In CPython, this is the
-   case for functions implemented in C that use :c:func:`PyArg_ParseTuple` to
+   case for functions implemented in C that use :cfunc:`PyArg_ParseTuple` to
    parse their arguments.
 
 If there are more positional arguments than there are formal parameter slots, a
@@ -735,15 +735,12 @@ dictionary containing the excess keyword arguments (using the keywords as keys
 and the argument values as corresponding values), or a (new) empty dictionary if
 there were no excess keyword arguments.
 
-.. index::
-   single: *; in function calls
-
 If the syntax ``*expression`` appears in the function call, ``expression`` must
-evaluate to an iterable.  Elements from this iterable are treated as if they
-were additional positional arguments; if there are positional arguments
-*x1*, ..., *xN*, and ``expression`` evaluates to a sequence *y1*, ..., *yM*, this
-is equivalent to a call with M+N positional arguments *x1*, ..., *xN*, *y1*,
-..., *yM*.
+evaluate to a sequence.  Elements from this sequence are treated as if they were
+additional positional arguments; if there are positional arguments *x1*,...,
+*xN*, and ``expression`` evaluates to a sequence *y1*, ..., *yM*, this is
+equivalent to a call with M+N positional arguments *x1*, ..., *xN*, *y1*, ...,
+*yM*.
 
 A consequence of this is that although the ``*expression`` syntax may appear
 *after* some keyword arguments, it is processed *before* the keyword arguments
@@ -763,9 +760,6 @@ A consequence of this is that although the ``*expression`` syntax may appear
 
 It is unusual for both keyword arguments and the ``*expression`` syntax to be
 used in the same call, so in practice this confusion does not arise.
-
-.. index::
-   single: **; in function calls
 
 If the syntax ``**expression`` appears in the function call, ``expression`` must
 evaluate to a mapping, the contents of which are treated as additional keyword
@@ -1048,9 +1042,9 @@ must be plain or long integers.  The arguments are converted to a common type.
 
 .. _comparisons:
 .. _is:
-.. _is not:
+.. _isnot:
 .. _in:
-.. _not in:
+.. _notin:
 
 Comparisons
 ===========
@@ -1398,8 +1392,8 @@ groups from right to left).
    true numerically due to roundoff.  For example, and assuming a platform on which
    a Python float is an IEEE 754 double-precision number, in order that ``-1e-100 %
    1e100`` have the same sign as ``1e100``, the computed result is ``-1e-100 +
-   1e100``, which is numerically exactly equal to ``1e100``.  The function
-   :func:`math.fmod` returns a result whose sign matches the sign of the
+   1e100``, which is numerically exactly equal to ``1e100``.  Function :func:`fmod`
+   in the :mod:`math` module returns a result whose sign matches the sign of the
    first argument instead, and so returns ``-1e-100`` in this case. Which approach
    is more appropriate depends on the application.
 
@@ -1429,8 +1423,7 @@ groups from right to left).
    the :keyword:`is` operator, like those involving comparisons between instance
    methods, or constants.  Check their documentation for more info.
 
-.. [#] The ``%`` operator is also used for string formatting; the same
-   precedence applies.
+.. [#] The ``%`` is also used for string formatting; the same precedence applies.
 
 .. [#] The power operator ``**`` binds less tightly than an arithmetic or
    bitwise unary operator on its right, that is, ``2**-1`` is ``0.5``.

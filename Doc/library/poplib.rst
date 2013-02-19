@@ -1,3 +1,4 @@
+
 :mod:`poplib` --- POP3 protocol client
 ======================================
 
@@ -7,10 +8,6 @@
 .. revised by ESR, January 2000
 
 .. index:: pair: POP3; protocol
-
-**Source code:** :source:`Lib/poplib.py`
-
---------------
 
 This module defines a class, :class:`POP3`, which encapsulates a connection to a
 POP3 server and implements the protocol as defined in :rfc:`1725`.  The

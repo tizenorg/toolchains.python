@@ -11,6 +11,8 @@
    compiler is assumed to be IBM's VisualAge C++ (VACPP).  PYCC_GCC is used
    as the compiler specific macro for the EMX port of gcc to OS/2. */
 
+/* See also ../Dos/dosmodule.c */
+
 #ifdef __APPLE__
    /*
     * Step 1 of support for weak-linking a number of symbols existing on
@@ -334,6 +336,18 @@ extern int lstat(const char *, struct stat *);
 
 #if defined(HAVE_TMPNAM_R) && defined(WITH_THREAD)
 #define USE_TMPNAM_R
+#endif
+
+/* choose the appropriate stat and fstat functions and return structs */
+#undef STAT
+#if defined(MS_WIN64) || defined(MS_WINDOWS)
+#       define STAT win32_stat
+#       define FSTAT win32_fstat
+#       define STRUCT_STAT struct win32_stat
+#else
+#       define STAT stat
+#       define FSTAT fstat
+#       define STRUCT_STAT struct stat
 #endif
 
 #if defined(MAJOR_IN_MKDEV)
@@ -826,20 +840,6 @@ win32_wchdir(LPCWSTR path)
 }
 #endif
 
-/* choose the appropriate stat and fstat functions and return structs */
-#undef STAT
-#undef FSTAT
-#undef STRUCT_STAT
-#if defined(MS_WIN64) || defined(MS_WINDOWS)
-#       define STAT win32_stat
-#       define FSTAT win32_fstat
-#       define STRUCT_STAT struct win32_stat
-#else
-#       define STAT stat
-#       define FSTAT fstat
-#       define STRUCT_STAT struct stat
-#endif
-
 #ifdef MS_WINDOWS
 /* The CRT of Windows has a number of flaws wrt. its stat() implementation:
    - time stamps are restricted to second resolution
@@ -858,18 +858,18 @@ struct win32_stat{
     int st_gid;
     int st_rdev;
     __int64 st_size;
-    time_t st_atime;
+    int st_atime;
     int st_atime_nsec;
-    time_t st_mtime;
+    int st_mtime;
     int st_mtime_nsec;
-    time_t st_ctime;
+    int st_ctime;
     int st_ctime_nsec;
 };
 
 static __int64 secs_between_epochs = 11644473600; /* Seconds between 1.1.1601 and 1.1.1970 */
 
 static void
-FILE_TIME_to_time_t_nsec(FILETIME *in_ptr, time_t *time_out, int* nsec_out)
+FILE_TIME_to_time_t_nsec(FILETIME *in_ptr, int *time_out, int* nsec_out)
 {
     /* XXX endianness. Shouldn't matter, as all Windows implementations are little-endian */
     /* Cannot simply cast and dereference in_ptr,
@@ -877,11 +877,12 @@ FILE_TIME_to_time_t_nsec(FILETIME *in_ptr, time_t *time_out, int* nsec_out)
     __int64 in;
     memcpy(&in, in_ptr, sizeof(in));
     *nsec_out = (int)(in % 10000000) * 100; /* FILETIME is in units of 100 nsec. */
-    *time_out = Py_SAFE_DOWNCAST((in / 10000000) - secs_between_epochs, __int64, time_t);
+    /* XXX Win32 supports time stamps past 2038; we currently don't */
+    *time_out = Py_SAFE_DOWNCAST((in / 10000000) - secs_between_epochs, __int64, int);
 }
 
 static void
-time_t_to_FILE_TIME(time_t time_in, int nsec_in, FILETIME *out_ptr)
+time_t_to_FILE_TIME(int time_in, int nsec_in, FILETIME *out_ptr)
 {
     /* XXX endianness */
     __int64 out;
@@ -2726,19 +2727,15 @@ posix_uname(PyObject *self, PyObject *noargs)
 #endif /* HAVE_UNAME */
 
 static int
-extract_time(PyObject *t, time_t* sec, long* usec)
+extract_time(PyObject *t, long* sec, long* usec)
 {
-    time_t intval;
+    long intval;
     if (PyFloat_Check(t)) {
         double tval = PyFloat_AsDouble(t);
-        PyObject *intobj = PyNumber_Long(t);
+        PyObject *intobj = Py_TYPE(t)->tp_as_number->nb_int(t);
         if (!intobj)
             return -1;
-#if SIZEOF_TIME_T > SIZEOF_LONG
-        intval = PyInt_AsUnsignedLongLongMask(intobj);
-#else
         intval = PyInt_AsLong(intobj);
-#endif
         Py_DECREF(intobj);
         if (intval == -1 && PyErr_Occurred())
             return -1;
@@ -2750,11 +2747,7 @@ extract_time(PyObject *t, time_t* sec, long* usec)
             *usec = 0;
         return 0;
     }
-#if SIZEOF_TIME_T > SIZEOF_LONG
-    intval = PyInt_AsUnsignedLongLongMask(t);
-#else
     intval = PyInt_AsLong(t);
-#endif
     if (intval == -1 && PyErr_Occurred())
         return -1;
     *sec = intval;
@@ -2777,8 +2770,7 @@ posix_utime(PyObject *self, PyObject *args)
     wchar_t *wpath = NULL;
     char *apath = NULL;
     HANDLE hFile;
-    time_t atimesec, mtimesec;
-    long ausec, musec;
+    long atimesec, mtimesec, ausec, musec;
     FILETIME atime, mtime;
     PyObject *result = NULL;
 
@@ -2843,7 +2835,6 @@ posix_utime(PyObject *self, PyObject *args)
            something is wrong with the file, when it also
            could be the time stamp that gives a problem. */
         win32_error("utime", NULL);
-        goto done;
     }
     Py_INCREF(Py_None);
     result = Py_None;
@@ -2853,8 +2844,7 @@ done:
 #else /* MS_WINDOWS */
 
     char *path = NULL;
-    time_t atime, mtime;
-    long ausec, musec;
+    long atime, mtime, ausec, musec;
     int res;
     PyObject* arg;
 
@@ -3901,7 +3891,7 @@ posix_getgroups(PyObject *self, PyObject *noargs)
 #endif
     gid_t grouplist[MAX_GROUPS];
 
-    /* On MacOSX getgroups(2) can return more than MAX_GROUPS results
+    /* On MacOSX getgroups(2) can return more than MAX_GROUPS results 
      * This is a helper variable to store the intermediate result when
      * that happens.
      *
@@ -4196,44 +4186,6 @@ win32_kill(PyObject *self, PyObject *args)
 
     CloseHandle(handle);
     return result;
-}
-
-PyDoc_STRVAR(posix__isdir__doc__,
-"Return true if the pathname refers to an existing directory.");
-
-static PyObject *
-posix__isdir(PyObject *self, PyObject *args)
-{
-    PyObject *opath;
-    char *path;
-    PyUnicodeObject *po;
-    DWORD attributes;
-
-    if (PyArg_ParseTuple(args, "U|:_isdir", &po)) {
-        Py_UNICODE *wpath = PyUnicode_AS_UNICODE(po);
-
-        attributes = GetFileAttributesW(wpath);
-        if (attributes == INVALID_FILE_ATTRIBUTES)
-            Py_RETURN_FALSE;
-        goto check;
-    }
-    /* Drop the argument parsing error as narrow strings
-       are also valid. */
-    PyErr_Clear();
-
-    if (!PyArg_ParseTuple(args, "et:_isdir",
-                          Py_FileSystemDefaultEncoding, &path))
-        return NULL;
-
-    attributes = GetFileAttributesA(path);
-    if (attributes == INVALID_FILE_ATTRIBUTES)
-        Py_RETURN_FALSE;
-
-check:
-    if (attributes & FILE_ATTRIBUTE_DIRECTORY)
-        Py_RETURN_TRUE;
-    else
-        Py_RETURN_FALSE;
 }
 #endif /* MS_WINDOWS */
 
@@ -6646,7 +6598,7 @@ posix_write(PyObject *self, PyObject *args)
 {
     Py_buffer pbuf;
     int fd;
-    Py_ssize_t size, len;
+    Py_ssize_t size;
 
     if (!PyArg_ParseTuple(args, "is*:write", &fd, &pbuf))
         return NULL;
@@ -6654,15 +6606,8 @@ posix_write(PyObject *self, PyObject *args)
         PyBuffer_Release(&pbuf);
         return posix_error();
     }
-    len = pbuf.len;
     Py_BEGIN_ALLOW_THREADS
-#if defined(MS_WIN64) || defined(MS_WINDOWS)
-    if (len > INT_MAX)
-        len = INT_MAX;
-    size = write(fd, pbuf.buf, (int)len);
-#else
-    size = write(fd, pbuf.buf, len);
-#endif
+    size = write(fd, pbuf.buf, (size_t)pbuf.len);
     Py_END_ALLOW_THREADS
     PyBuffer_Release(&pbuf);
     if (size < 0)
@@ -6755,8 +6700,6 @@ posix_fdopen(PyObject *self, PyObject *args)
     PyMem_FREE(mode);
     if (fp == NULL)
         return posix_error();
-    /* The dummy filename used here must be kept in sync with the value
-       tested against in gzip.GzipFile.__init__() - see issue #13781. */
     f = PyFile_FromFile(fp, "<fdopen>", orgmode, fclose);
     if (f != NULL)
         PyFile_SetBufSize(f, bufsize);
@@ -6996,14 +6939,6 @@ posix_putenv(PyObject *self, PyObject *args)
 
     /* XXX This can leak memory -- not easy to fix :-( */
     len = strlen(s1) + strlen(s2) + 2;
-#ifdef MS_WINDOWS
-    if (_MAX_ENV < (len - 1)) {
-        PyErr_Format(PyExc_ValueError,
-                     "the environment variable is longer than %u bytes",
-                     _MAX_ENV);
-        return NULL;
-    }
-#endif
     /* len includes space for a trailing \0; the size arg to
        PyString_FromStringAndSize does not count that */
     newstr = PyString_FromStringAndSize(NULL, (int)len - 1);
@@ -7046,20 +6981,11 @@ static PyObject *
 posix_unsetenv(PyObject *self, PyObject *args)
 {
     char *s1;
-#ifndef HAVE_BROKEN_UNSETENV
-    int err;
-#endif
 
     if (!PyArg_ParseTuple(args, "s:unsetenv", &s1))
         return NULL;
 
-#ifdef HAVE_BROKEN_UNSETENV
     unsetenv(s1);
-#else
-    err = unsetenv(s1);
-    if (err)
-        return posix_error();
-#endif
 
     /* Remove the key from posix_putenv_garbage;
      * this will cause it to be collected.  This has to
@@ -7369,17 +7295,13 @@ posix_tempnam(PyObject *self, PyObject *args)
                    "tempnam is a potential security risk to your program") < 0)
         return NULL;
 
-    if (PyErr_WarnPy3k("tempnam has been removed in 3.x; "
-                       "use the tempfile module", 1) < 0)
-        return NULL;
-
 #ifdef MS_WINDOWS
     name = _tempnam(dir, pfx);
 #else
     name = tempnam(dir, pfx);
 #endif
     if (name == NULL)
-        return PyErr_NoMemory();
+    return PyErr_NoMemory();
     result = PyString_FromString(name);
     free(name);
     return result;
@@ -7397,13 +7319,9 @@ posix_tmpfile(PyObject *self, PyObject *noargs)
 {
     FILE *fp;
 
-    if (PyErr_WarnPy3k("tmpfile has been removed in 3.x; "
-                       "use the tempfile module", 1) < 0)
-        return NULL;
-
     fp = tmpfile();
     if (fp == NULL)
-        return posix_error();
+    return posix_error();
     return PyFile_FromFile(fp, "<tmpfile>", "w+b", fclose);
 }
 #endif
@@ -7424,26 +7342,22 @@ posix_tmpnam(PyObject *self, PyObject *noargs)
                    "tmpnam is a potential security risk to your program") < 0)
         return NULL;
 
-    if (PyErr_WarnPy3k("tmpnam has been removed in 3.x; "
-                       "use the tempfile module", 1) < 0)
-        return NULL;
-
 #ifdef USE_TMPNAM_R
     name = tmpnam_r(buffer);
 #else
     name = tmpnam(buffer);
 #endif
     if (name == NULL) {
-        PyObject *err = Py_BuildValue("is", 0,
+    PyObject *err = Py_BuildValue("is", 0,
 #ifdef USE_TMPNAM_R
-                                      "unexpected NULL from tmpnam_r"
+                                  "unexpected NULL from tmpnam_r"
 #else
-                                      "unexpected NULL from tmpnam"
+                                  "unexpected NULL from tmpnam"
 #endif
-                                      );
-        PyErr_SetObject(PyExc_OSError, err);
-        Py_XDECREF(err);
-        return NULL;
+                                  );
+    PyErr_SetObject(PyExc_OSError, err);
+    Py_XDECREF(err);
+    return NULL;
     }
     return PyString_FromString(buffer);
 }
@@ -8538,35 +8452,117 @@ posix_getloadavg(PyObject *self, PyObject *noargs)
 }
 #endif
 
-PyDoc_STRVAR(posix_urandom__doc__,
+#ifdef MS_WINDOWS
+
+PyDoc_STRVAR(win32_urandom__doc__,
 "urandom(n) -> str\n\n\
-Return n random bytes suitable for cryptographic use.");
+Return a string of n random bytes suitable for cryptographic use.");
 
-static PyObject *
-posix_urandom(PyObject *self, PyObject *args)
+typedef BOOL (WINAPI *CRYPTACQUIRECONTEXTA)(HCRYPTPROV *phProv,\
+              LPCSTR pszContainer, LPCSTR pszProvider, DWORD dwProvType,\
+              DWORD dwFlags );
+typedef BOOL (WINAPI *CRYPTGENRANDOM)(HCRYPTPROV hProv, DWORD dwLen,\
+              BYTE *pbBuffer );
+
+static CRYPTGENRANDOM pCryptGenRandom = NULL;
+/* This handle is never explicitly released. Instead, the operating
+   system will release it when the process terminates. */
+static HCRYPTPROV hCryptProv = 0;
+
+static PyObject*
+win32_urandom(PyObject *self, PyObject *args)
 {
-    Py_ssize_t size;
-    PyObject *result;
-    int ret;
+    int howMany;
+    PyObject* result;
 
-     /* Read arguments */
-    if (!PyArg_ParseTuple(args, "n:urandom", &size))
+    /* Read arguments */
+    if (! PyArg_ParseTuple(args, "i:urandom", &howMany))
         return NULL;
-    if (size < 0)
+    if (howMany < 0)
         return PyErr_Format(PyExc_ValueError,
                             "negative argument not allowed");
-    result = PyBytes_FromStringAndSize(NULL, size);
-    if (result == NULL)
-        return NULL;
 
-    ret = _PyOS_URandom(PyBytes_AS_STRING(result),
-                        PyBytes_GET_SIZE(result));
-    if (ret == -1) {
-        Py_DECREF(result);
-        return NULL;
+    if (hCryptProv == 0) {
+        HINSTANCE hAdvAPI32 = NULL;
+        CRYPTACQUIRECONTEXTA pCryptAcquireContext = NULL;
+
+        /* Obtain handle to the DLL containing CryptoAPI
+           This should not fail         */
+        hAdvAPI32 = GetModuleHandle("advapi32.dll");
+        if(hAdvAPI32 == NULL)
+            return win32_error("GetModuleHandle", NULL);
+
+        /* Obtain pointers to the CryptoAPI functions
+           This will fail on some early versions of Win95 */
+        pCryptAcquireContext = (CRYPTACQUIRECONTEXTA)GetProcAddress(
+                                        hAdvAPI32,
+                                        "CryptAcquireContextA");
+        if (pCryptAcquireContext == NULL)
+            return PyErr_Format(PyExc_NotImplementedError,
+                                "CryptAcquireContextA not found");
+
+        pCryptGenRandom = (CRYPTGENRANDOM)GetProcAddress(
+                                        hAdvAPI32, "CryptGenRandom");
+        if (pCryptGenRandom == NULL)
+            return PyErr_Format(PyExc_NotImplementedError,
+                                "CryptGenRandom not found");
+
+        /* Acquire context */
+        if (! pCryptAcquireContext(&hCryptProv, NULL, NULL,
+                                   PROV_RSA_FULL, CRYPT_VERIFYCONTEXT))
+            return win32_error("CryptAcquireContext", NULL);
+    }
+
+    /* Allocate bytes */
+    result = PyString_FromStringAndSize(NULL, howMany);
+    if (result != NULL) {
+        /* Get random data */
+        memset(PyString_AS_STRING(result), 0, howMany); /* zero seed */
+        if (! pCryptGenRandom(hCryptProv, howMany, (unsigned char*)
+                              PyString_AS_STRING(result))) {
+            Py_DECREF(result);
+            return win32_error("CryptGenRandom", NULL);
+        }
     }
     return result;
 }
+#endif
+
+#ifdef __VMS
+/* Use openssl random routine */
+#include <openssl/rand.h>
+PyDoc_STRVAR(vms_urandom__doc__,
+"urandom(n) -> str\n\n\
+Return a string of n random bytes suitable for cryptographic use.");
+
+static PyObject*
+vms_urandom(PyObject *self, PyObject *args)
+{
+    int howMany;
+    PyObject* result;
+
+    /* Read arguments */
+    if (! PyArg_ParseTuple(args, "i:urandom", &howMany))
+        return NULL;
+    if (howMany < 0)
+        return PyErr_Format(PyExc_ValueError,
+                            "negative argument not allowed");
+
+    /* Allocate bytes */
+    result = PyString_FromStringAndSize(NULL, howMany);
+    if (result != NULL) {
+        /* Get random data */
+        if (RAND_pseudo_bytes((unsigned char*)
+                              PyString_AS_STRING(result),
+                              howMany) < 0) {
+            Py_DECREF(result);
+            return PyErr_Format(PyExc_ValueError,
+                                "RAND_pseudo_bytes");
+        }
+    }
+    return result;
+}
+#endif
 
 #ifdef HAVE_SETRESUID
 PyDoc_STRVAR(posix_setresuid__doc__,
@@ -8948,11 +8944,16 @@ static PyMethodDef posix_methods[] = {
     {"abort",           posix_abort, METH_NOARGS, posix_abort__doc__},
 #ifdef MS_WINDOWS
     {"_getfullpathname",        posix__getfullpathname, METH_VARARGS, NULL},
-    {"_isdir",                  posix__isdir, METH_VARARGS, posix__isdir__doc__},
 #endif
 #ifdef HAVE_GETLOADAVG
     {"getloadavg",      posix_getloadavg, METH_NOARGS, posix_getloadavg__doc__},
 #endif
+ #ifdef MS_WINDOWS
+    {"urandom", win32_urandom, METH_VARARGS, win32_urandom__doc__},
+ #endif
+ #ifdef __VMS
+    {"urandom", vms_urandom, METH_VARARGS, vms_urandom__doc__},
+ #endif
 #ifdef HAVE_SETRESUID
     {"setresuid",       posix_setresuid, METH_VARARGS, posix_setresuid__doc__},
 #endif
@@ -8965,7 +8966,7 @@ static PyMethodDef posix_methods[] = {
 #ifdef HAVE_GETRESGID
     {"getresgid",       posix_getresgid, METH_NOARGS, posix_getresgid__doc__},
 #endif
-    {"urandom",         posix_urandom,   METH_VARARGS, posix_urandom__doc__},
+
     {NULL,              NULL}            /* Sentinel */
 };
 

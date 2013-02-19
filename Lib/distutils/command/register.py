@@ -5,11 +5,12 @@ Implements the Distutils 'register' command (register with the repository).
 
 # created 2002/10/21, Richard Jones
 
-__revision__ = "$Id$"
+__revision__ = "$Id: register.py 77717 2010-01-24 00:33:32Z tarek.ziade $"
 
 import urllib2
 import getpass
 import urlparse
+import StringIO
 from warnings import warn
 
 from distutils.core import PyPIRCCommand
@@ -259,30 +260,21 @@ Your selection [default 1]: ''', log.INFO)
         boundary = '--------------GHSKFJDLGDS7543FJKLFHRE75642756743254'
         sep_boundary = '\n--' + boundary
         end_boundary = sep_boundary + '--'
-        chunks = []
+        body = StringIO.StringIO()
         for key, value in data.items():
             # handle multiple entries for the same name
             if type(value) not in (type([]), type( () )):
                 value = [value]
             for value in value:
-                chunks.append(sep_boundary)
-                chunks.append('\nContent-Disposition: form-data; name="%s"'%key)
-                chunks.append("\n\n")
-                chunks.append(value)
+                body.write(sep_boundary)
+                body.write('\nContent-Disposition: form-data; name="%s"'%key)
+                body.write("\n\n")
+                body.write(value)
                 if value and value[-1] == '\r':
-                    chunks.append('\n')  # write an extra newline (lurve Macs)
-        chunks.append(end_boundary)
-        chunks.append("\n")
-
-        # chunks may be bytes (str) or unicode objects that we need to encode
-        body = []
-        for chunk in chunks:
-            if isinstance(chunk, unicode):
-                body.append(chunk.encode('utf-8'))
-            else:
-                body.append(chunk)
-
-        body = ''.join(body)
+                    body.write('\n')  # write an extra newline (lurve Macs)
+        body.write(end_boundary)
+        body.write("\n")
+        body = body.getvalue()
 
         # build the Request
         headers = {

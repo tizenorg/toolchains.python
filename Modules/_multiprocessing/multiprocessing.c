@@ -8,7 +8,7 @@
 
 #include "multiprocessing.h"
 
-#if (defined(CMSG_LEN) && defined(SCM_RIGHTS))
+#ifdef SCM_RIGHTS
     #define HAVE_FD_TRANSFER 1
 #else
     #define HAVE_FD_TRANSFER 0
@@ -97,38 +97,32 @@ ProcessingCtrlHandler(DWORD dwCtrlType)
 /* Functions for transferring file descriptors between processes.
    Reimplements some of the functionality of the fdcred
    module at http://www.mca-ltd.com/resources/fdcred_1.tgz. */
-/* Based in http://resin.csoft.net/cgi-bin/man.cgi?section=3&topic=CMSG_DATA */
 
 static PyObject *
 multiprocessing_sendfd(PyObject *self, PyObject *args)
 {
     int conn, fd, res;
-    struct iovec dummy_iov;
     char dummy_char;
-    struct msghdr msg;
+    char buf[CMSG_SPACE(sizeof(int))];
+    struct msghdr msg = {0};
+    struct iovec dummy_iov;
     struct cmsghdr *cmsg;
-    union {
-        struct cmsghdr hdr;
-        unsigned char buf[CMSG_SPACE(sizeof(int))];
-    } cmsgbuf;
 
     if (!PyArg_ParseTuple(args, "ii", &conn, &fd))
         return NULL;
 
     dummy_iov.iov_base = &dummy_char;
     dummy_iov.iov_len = 1;
-
-    memset(&msg, 0, sizeof(msg));
-    msg.msg_control = &cmsgbuf.buf;
-    msg.msg_controllen = sizeof(cmsgbuf.buf);
+    msg.msg_control = buf;
+    msg.msg_controllen = sizeof(buf);
     msg.msg_iov = &dummy_iov;
     msg.msg_iovlen = 1;
-
     cmsg = CMSG_FIRSTHDR(&msg);
-    cmsg->cmsg_len = CMSG_LEN(sizeof(int));
     cmsg->cmsg_level = SOL_SOCKET;
     cmsg->cmsg_type = SCM_RIGHTS;
-    * (int *) CMSG_DATA(cmsg) = fd;
+    cmsg->cmsg_len = CMSG_LEN(sizeof(int));
+    msg.msg_controllen = cmsg->cmsg_len;
+    *CMSG_DATA(cmsg) = fd;
 
     Py_BEGIN_ALLOW_THREADS
     res = sendmsg(conn, &msg, 0);
@@ -144,26 +138,20 @@ multiprocessing_recvfd(PyObject *self, PyObject *args)
 {
     int conn, fd, res;
     char dummy_char;
-    struct iovec dummy_iov;
+    char buf[CMSG_SPACE(sizeof(int))];
     struct msghdr msg = {0};
+    struct iovec dummy_iov;
     struct cmsghdr *cmsg;
-    union {
-        struct cmsghdr hdr;
-        unsigned char buf[CMSG_SPACE(sizeof(int))];
-    } cmsgbuf;
 
     if (!PyArg_ParseTuple(args, "i", &conn))
         return NULL;
 
     dummy_iov.iov_base = &dummy_char;
     dummy_iov.iov_len = 1;
-
-    memset(&msg, 0, sizeof(msg));
-    msg.msg_control = &cmsgbuf.buf;
-    msg.msg_controllen = sizeof(cmsgbuf.buf);
+    msg.msg_control = buf;
+    msg.msg_controllen = sizeof(buf);
     msg.msg_iov = &dummy_iov;
     msg.msg_iovlen = 1;
-
     cmsg = CMSG_FIRSTHDR(&msg);
     cmsg->cmsg_level = SOL_SOCKET;
     cmsg->cmsg_type = SCM_RIGHTS;
@@ -177,18 +165,7 @@ multiprocessing_recvfd(PyObject *self, PyObject *args)
     if (res < 0)
         return PyErr_SetFromErrno(PyExc_OSError);
 
-    if (msg.msg_controllen < CMSG_LEN(sizeof(int)) ||
-        (cmsg = CMSG_FIRSTHDR(&msg)) == NULL ||
-        cmsg->cmsg_level != SOL_SOCKET ||
-        cmsg->cmsg_type != SCM_RIGHTS ||
-        cmsg->cmsg_len < CMSG_LEN(sizeof(int))) {
-        /* If at least one control message is present, there should be
-           no room for any further data in the buffer. */
-        PyErr_SetString(PyExc_RuntimeError, "No file descriptor received");
-        return NULL;
-    }
-
-    fd = * (int *) CMSG_DATA(cmsg);
+    fd = *CMSG_DATA(cmsg);
     return Py_BuildValue("i", fd);
 }
 

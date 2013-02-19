@@ -32,14 +32,6 @@ gdbpy_version, _ = p.communicate()
 if gdbpy_version == '':
     raise unittest.SkipTest("gdb not built with embedded python support")
 
-def python_is_optimized():
-    cflags = sysconfig.get_config_vars()['PY_CFLAGS']
-    final_opt = ""
-    for opt in cflags.split():
-        if opt.startswith('-O'):
-            final_opt = opt
-    return (final_opt and final_opt != '-O0')
-
 def gdb_has_frame_select():
     # Does this build of gdb have gdb.Frame.select ?
     cmd = "--eval-command=python print(dir(gdb.Frame))"
@@ -58,18 +50,13 @@ class DebuggerTests(unittest.TestCase):
 
     """Test that the debugger can debug Python."""
 
-    def run_gdb(self, *args, **env_vars):
+    def run_gdb(self, *args):
         """Runs gdb with the command line given by *args.
 
         Returns its stdout, stderr
         """
-        if env_vars:
-            env = os.environ.copy()
-            env.update(env_vars)
-        else:
-            env = None
         out, err = subprocess.Popen(
-            args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env
+            args, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             ).communicate()
         return out, err
 
@@ -129,7 +116,7 @@ class DebuggerTests(unittest.TestCase):
         # print ' '.join(args)
 
         # Use "args" to invoke gdb, capturing stdout, stderr:
-        out, err = self.run_gdb(*args, PYTHONHASHSEED='0')
+        out, err = self.run_gdb(*args)
 
         # Ignore some noise on stderr due to the pending breakpoint:
         err = err.replace('Function "%s" not defined.\n' % breakpoint, '')
@@ -137,9 +124,6 @@ class DebuggerTests(unittest.TestCase):
         err = err.replace("warning: Unable to find libthread_db matching"
                           " inferior's thread library, thread debugging will"
                           " not be available.\n",
-                          '')
-        err = err.replace("warning: Cannot initialize thread debugging"
-                          " library: Debugger service failed\n",
                           '')
 
         # Ensure no unexpected error messages:
@@ -218,7 +202,7 @@ class PrettyPrintTests(DebuggerTests):
         'Verify the pretty-printing of dictionaries'
         self.assertGdbRepr({})
         self.assertGdbRepr({'foo': 'bar'})
-        self.assertGdbRepr("{'foo': 'bar', 'douglas':42}")
+        self.assertGdbRepr({'foo': 'bar', 'douglas':42})
 
     def test_lists(self):
         'Verify the pretty-printing of lists'
@@ -265,14 +249,8 @@ class PrettyPrintTests(DebuggerTests):
     def test_sets(self):
         'Verify the pretty-printing of sets'
         self.assertGdbRepr(set())
-        rep = self.get_gdb_repr("print set(['a', 'b'])")[0]
-        self.assertTrue(rep.startswith("set(["))
-        self.assertTrue(rep.endswith("])"))
-        self.assertEqual(eval(rep), {'a', 'b'})
-        rep = self.get_gdb_repr("print set([4, 5])")[0]
-        self.assertTrue(rep.startswith("set(["))
-        self.assertTrue(rep.endswith("])"))
-        self.assertEqual(eval(rep), {4, 5})
+        self.assertGdbRepr(set(['a', 'b']))
+        self.assertGdbRepr(set([4, 5, 6]))
 
         # Ensure that we handled sets containing the "dummy" key value,
         # which happens on deletion:
@@ -284,14 +262,8 @@ print s''')
     def test_frozensets(self):
         'Verify the pretty-printing of frozensets'
         self.assertGdbRepr(frozenset())
-        rep = self.get_gdb_repr("print frozenset(['a', 'b'])")[0]
-        self.assertTrue(rep.startswith("frozenset(["))
-        self.assertTrue(rep.endswith("])"))
-        self.assertEqual(eval(rep), {'a', 'b'})
-        rep = self.get_gdb_repr("print frozenset([4, 5])")[0]
-        self.assertTrue(rep.startswith("frozenset(["))
-        self.assertTrue(rep.endswith("])"))
-        self.assertEqual(eval(rep), {4, 5})
+        self.assertGdbRepr(frozenset(['a', 'b']))
+        self.assertGdbRepr(frozenset([4, 5, 6]))
 
     def test_exceptions(self):
         # Test a RuntimeError
@@ -568,8 +540,6 @@ print foo.__code__''',
                                  re.DOTALL),
                         'Unexpected gdb representation: %r\n%s' % (gdb_output, gdb_output))
 
-@unittest.skipIf(python_is_optimized(),
-                 "Python was compiled with optimizations")
 class PyListTests(DebuggerTests):
     def assertListing(self, expected, actual):
         self.assertEndsWith(actual, expected)
@@ -612,8 +582,6 @@ class PyListTests(DebuggerTests):
 
 class StackNavigationTests(DebuggerTests):
     @unittest.skipUnless(HAS_PYUP_PYDOWN, "test requires py-up/py-down commands")
-    @unittest.skipIf(python_is_optimized(),
-                     "Python was compiled with optimizations")
     def test_pyup_command(self):
         'Verify that the "py-up" command works'
         bt = self.get_stack_trace(script=self.get_sample_script(),
@@ -641,8 +609,6 @@ $''')
                             'Unable to find an older python frame\n')
 
     @unittest.skipUnless(HAS_PYUP_PYDOWN, "test requires py-up/py-down commands")
-    @unittest.skipIf(python_is_optimized(),
-                     "Python was compiled with optimizations")
     def test_up_then_down(self):
         'Verify "py-up" followed by "py-down"'
         bt = self.get_stack_trace(script=self.get_sample_script(),
@@ -656,8 +622,6 @@ $''')
 $''')
 
 class PyBtTests(DebuggerTests):
-    @unittest.skipIf(python_is_optimized(),
-                     "Python was compiled with optimizations")
     def test_basic_command(self):
         'Verify that the "py-bt" command works'
         bt = self.get_stack_trace(script=self.get_sample_script(),
@@ -669,12 +633,10 @@ class PyBtTests(DebuggerTests):
 #[0-9]+ Frame 0x[0-9a-f]+, for file .*gdb_sample.py, line 4, in foo \(a=1, b=2, c=3\)
     bar\(a, b, c\)
 #[0-9]+ Frame 0x[0-9a-f]+, for file .*gdb_sample.py, line 12, in <module> \(\)
-    foo\(1, 2, 3\)
+foo\(1, 2, 3\)
 ''')
 
 class PyPrintTests(DebuggerTests):
-    @unittest.skipIf(python_is_optimized(),
-                     "Python was compiled with optimizations")
     def test_basic_command(self):
         'Verify that the "py-print" command works'
         bt = self.get_stack_trace(script=self.get_sample_script(),
@@ -683,24 +645,18 @@ class PyPrintTests(DebuggerTests):
                                     r".*\nlocal 'args' = \(1, 2, 3\)\n.*")
 
     @unittest.skipUnless(HAS_PYUP_PYDOWN, "test requires py-up/py-down commands")
-    @unittest.skipIf(python_is_optimized(),
-                     "Python was compiled with optimizations")
     def test_print_after_up(self):
         bt = self.get_stack_trace(script=self.get_sample_script(),
                                   cmds_after_breakpoint=['py-up', 'py-print c', 'py-print b', 'py-print a'])
         self.assertMultilineMatches(bt,
                                     r".*\nlocal 'c' = 3\nlocal 'b' = 2\nlocal 'a' = 1\n.*")
 
-    @unittest.skipIf(python_is_optimized(),
-                     "Python was compiled with optimizations")
     def test_printing_global(self):
         bt = self.get_stack_trace(script=self.get_sample_script(),
                                   cmds_after_breakpoint=['py-print __name__'])
         self.assertMultilineMatches(bt,
                                     r".*\nglobal '__name__' = '__main__'\n.*")
 
-    @unittest.skipIf(python_is_optimized(),
-                     "Python was compiled with optimizations")
     def test_printing_builtin(self):
         bt = self.get_stack_trace(script=self.get_sample_script(),
                                   cmds_after_breakpoint=['py-print len'])
@@ -708,8 +664,6 @@ class PyPrintTests(DebuggerTests):
                                     r".*\nbuiltin 'len' = <built-in function len>\n.*")
 
 class PyLocalsTests(DebuggerTests):
-    @unittest.skipIf(python_is_optimized(),
-                     "Python was compiled with optimizations")
     def test_basic_command(self):
         bt = self.get_stack_trace(script=self.get_sample_script(),
                                   cmds_after_breakpoint=['py-locals'])
@@ -717,8 +671,6 @@ class PyLocalsTests(DebuggerTests):
                                     r".*\nargs = \(1, 2, 3\)\n.*")
 
     @unittest.skipUnless(HAS_PYUP_PYDOWN, "test requires py-up/py-down commands")
-    @unittest.skipIf(python_is_optimized(),
-                     "Python was compiled with optimizations")
     def test_locals_after_up(self):
         bt = self.get_stack_trace(script=self.get_sample_script(),
                                   cmds_after_breakpoint=['py-up', 'py-locals'])
@@ -726,6 +678,15 @@ class PyLocalsTests(DebuggerTests):
                                     r".*\na = 1\nb = 2\nc = 3\n.*")
 
 def test_main():
+    cflags = sysconfig.get_config_vars()['PY_CFLAGS']
+    final_opt = ""
+    for opt in cflags.split():
+        if opt.startswith('-O'):
+            final_opt = opt
+    if final_opt and final_opt != '-O0':
+        raise unittest.SkipTest("Python was built with compiler optimizations, "
+                                "tests can't reliably succeed")
+
     run_unittest(PrettyPrintTests,
                  PyListTests,
                  StackNavigationTests,

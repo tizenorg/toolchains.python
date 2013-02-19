@@ -325,39 +325,32 @@ class FTP:
         if self.passiveserver:
             host, port = self.makepasv()
             conn = socket.create_connection((host, port), self.timeout)
-            try:
-                if rest is not None:
-                    self.sendcmd("REST %s" % rest)
-                resp = self.sendcmd(cmd)
-                # Some servers apparently send a 200 reply to
-                # a LIST or STOR command, before the 150 reply
-                # (and way before the 226 reply). This seems to
-                # be in violation of the protocol (which only allows
-                # 1xx or error messages for LIST), so we just discard
-                # this response.
-                if resp[0] == '2':
-                    resp = self.getresp()
-                if resp[0] != '1':
-                    raise error_reply, resp
-            except:
-                conn.close()
-                raise
+            if rest is not None:
+                self.sendcmd("REST %s" % rest)
+            resp = self.sendcmd(cmd)
+            # Some servers apparently send a 200 reply to
+            # a LIST or STOR command, before the 150 reply
+            # (and way before the 226 reply). This seems to
+            # be in violation of the protocol (which only allows
+            # 1xx or error messages for LIST), so we just discard
+            # this response.
+            if resp[0] == '2':
+                resp = self.getresp()
+            if resp[0] != '1':
+                raise error_reply, resp
         else:
             sock = self.makeport()
-            try:
-                if rest is not None:
-                    self.sendcmd("REST %s" % rest)
-                resp = self.sendcmd(cmd)
-                # See above.
-                if resp[0] == '2':
-                    resp = self.getresp()
-                if resp[0] != '1':
-                    raise error_reply, resp
-                conn, sockaddr = sock.accept()
-                if self.timeout is not _GLOBAL_DEFAULT_TIMEOUT:
-                    conn.settimeout(self.timeout)
-            finally:
-                sock.close()
+            if rest is not None:
+                self.sendcmd("REST %s" % rest)
+            resp = self.sendcmd(cmd)
+            # See above.
+            if resp[0] == '2':
+                resp = self.getresp()
+            if resp[0] != '1':
+                raise error_reply, resp
+            conn, sockaddr = sock.accept()
+            if self.timeout is not _GLOBAL_DEFAULT_TIMEOUT:
+                conn.settimeout(self.timeout)
         if resp[:3] == '150':
             # this is conditional in case we received a 125
             size = parse150(resp)
@@ -582,11 +575,11 @@ class FTP:
 
     def close(self):
         '''Close the connection without assuming anything about it.'''
-        if self.file is not None:
+        if self.file:
             self.file.close()
-        if self.sock is not None:
             self.sock.close()
-        self.file = self.sock = None
+            self.file = self.sock = None
+
 
 try:
     import ssl
@@ -606,7 +599,7 @@ else:
         Usage example:
         >>> from ftplib import FTP_TLS
         >>> ftps = FTP_TLS('ftp.python.org')
-        >>> ftps.login()  # login anonymously previously securing control channel
+        >>> ftps.login()  # login anonimously previously securing control channel
         '230 Guest login ok, access restrictions apply.'
         >>> ftps.prot_p()  # switch to secure data connection
         '200 Protection level set to P'
