@@ -1,7 +1,7 @@
 Name:           python-base
 BuildRequires:  fdupes pkgconfig zlib-devel
 Url:            http://www.python.org/
-License:        MIT License (or similar)
+License:        PSFv2
 Group:          Development/Languages/Python
 AutoReqProv:    on
 # bug437293

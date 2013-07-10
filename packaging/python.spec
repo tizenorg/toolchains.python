@@ -1,7 +1,7 @@
 Name:           python
 BuildRequires:  db4-devel fdupes gdbm-devel gmp-devel bzip2-devel openssl-devel ncurses-devel readline-devel sqlite-devel 
 Url:            http://www.python.org/
-License:        MIT License (or similar)
+License:        PSFv2
 Group:          Development/Languages/Python
 Obsoletes:      python-nothreads python21 python-elementtree python-sqlite
 Summary:        Python Interpreter

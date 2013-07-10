@@ -1,6 +1,6 @@
 Name:           python-doc
 Url:            http://www.python.org/
-License:        Python License ..
+License:        PSFv2
 Group:          Development/Languages/Python
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 Summary:        Additional Package Documentation for Python.
