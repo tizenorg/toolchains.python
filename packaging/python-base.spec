@@ -216,6 +216,10 @@ ln -s python%{python_version}.1.gz ${RPM_BUILD_ROOT}%{_mandir}/man1/python.1.gz
 # install Makefile.pre.in and Makefile.pre
 cp Makefile Makefile.pre.in Makefile.pre $RPM_BUILD_ROOT%{_libdir}/python%{python_version}/config/
 
+# Tizen SDK license
+mkdir -p %{buildroot}/usr/share/license
+cp LICENSE %{buildroot}/usr/share/license/%{name}
+
 %clean
 rm -rf $RPM_BUILD_ROOT
 
@@ -358,5 +362,6 @@ rm -rf $RPM_BUILD_ROOT
 %attr(755, root, root) %{_bindir}/python%{python_version}
 %attr(755, root, root) %{_bindir}/smtpd.py
 %{_bindir}/python2
+/usr/share/license/%{name}
 
 %changelog
