@@ -35,7 +35,7 @@ Provides:       %{name} = %{python_version}
 Python is an interpreted, object-oriented programming language, and is
 often compared to Tcl, Perl, Scheme, or Java.  You can find an overview
 of Python in the documentation and tutorials included in the python-doc
-(HTML) or python-doc-pdf (PDF) packages.
+(HTML) or python-doc-pdf (PDF) packages.xml-support
 
 If you want to install third party modules using distutils, you need to
 install python-devel package.
@@ -63,13 +63,13 @@ Authors:
 --------  
     Guido van Rossum <guido@python.org>  
  
-%package xml  
+%package xml-support
 License:        Python License ..  
 Requires:       python-base = %{version}   
 Summary:        An Integrated Development Environment for Python  
 Group:          Development/Languages/Python  
  
-%description xml  
+%description xml-support
 for supporting xml stuff. (TODO: This description should be changed correctly.)  
 
 
@@ -339,7 +339,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/python%{python_version}/idlelib
 %attr(755, root, root) %{_bindir}/%{idle_name}
    
-%files xml  
+%files xml-support
 %{_libdir}/python%{python_version}/xml/*  
 %{_libdir}/python%{python_version}/xml/*/*  
 
