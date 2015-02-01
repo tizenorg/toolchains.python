@@ -31,6 +31,7 @@ Patch14:        python-2.7-CVE-2011-1521-fileurl.patch
 Patch15:        python-2.7-fix-parallel-make.patch
 Patch16:        python-2.7.1-linux3.patch
 Patch17:        subprocess-can-raise-OSError-EPIPE-when-communicatin.patch
+Patch100:       python-2.7.1-home64.patch
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 %define         python_version    %(echo %{version} | head -c 3)
 Provides:       %{name} = %{python_version}
@@ -116,7 +117,7 @@ Authors:
 # patching
 %patch1 -p1
 %patch2 -p1
-%patch3 -p1
+#patch3 -p1
 %patch4
 %patch5
 %patch6
@@ -128,6 +129,7 @@ Authors:
 %patch15 -p1
 %patch16 -p1
 %patch17 -p1
+%patch100 -p1
 
 # drop Autoconf version requirement
 sed -i 's/^version_required/dnl version_required/' configure.in
@@ -152,8 +154,8 @@ touch Parser/asdl* Python/Python-ast.c Include/Python-ast.h
     --libdir=%{_libdir} \
     --mandir=%{_mandir} \
     --docdir=%{_docdir}/python \
-    --with-fpectl \
     --enable-ipv6 \
+    --with-fpectl \
     --enable-shared \
     --enable-unicode=ucs4
 
@@ -176,8 +178,8 @@ make \
     install
 # install site-specific tweaks
 ln -s python%{python_version} ${RPM_BUILD_ROOT}%{_bindir}/python2
-install -m 644 %{S:4} ${RPM_BUILD_ROOT}%{_libdir}/python%{python_version}/distutils
-install -m 644 %{S:5} ${RPM_BUILD_ROOT}%{_libdir}/python%{python_version}/site-packages
+install -m 644 %{S:4} ${RPM_BUILD_ROOT}%{_prefix}/lib/python%{python_version}/distutils
+install -m 644 %{S:5} ${RPM_BUILD_ROOT}%{_prefix}/lib/python%{python_version}/site-packages
 install -d -m 755 ${RPM_BUILD_ROOT}/etc/rpm
 install -m 644 %{S:1} ${RPM_BUILD_ROOT}/etc/rpm
 # make sure /usr/lib/python/site-packages exists even on lib64 machines
@@ -186,11 +188,11 @@ mkdir -p ${RPM_BUILD_ROOT}/usr/lib/python%{python_version}/site-packages
 # some cleanups
 ########################################
 # remove hard links and replace them with symlinks
-for dir in bin include %{_lib} ; do
+for dir in bin include lib ; do
     rm -f $RPM_BUILD_ROOT/%{_prefix}/$dir/python
     ln -s python%{python_version} $RPM_BUILD_ROOT/%{_prefix}/$dir/python
 done
-CLEANUP_DIR="$RPM_BUILD_ROOT%{_libdir}/python%{python_version}"
+CLEANUP_DIR="$RPM_BUILD_ROOT%{_prefix}/lib/python%{python_version}"
 # don't distribute precompiled windows installers (duh)
 rm -f $CLEANUP_DIR/distutils/command/*.exe
 # kill imageop.so and audioop.so, they are rarely used and insecure
@@ -205,7 +207,7 @@ rm $CLEANUP_DIR/ssl.py*
 find $CLEANUP_DIR -name '*.py[co]' -print | xargs rm -f
 #        does not work without _ssl.so anyway
 # replace duplicate .pyo/.pyc with hardlinks
-%fdupes $RPM_BUILD_ROOT/%{_libdir}/python%{python_version}
+%fdupes $RPM_BUILD_ROOT/%{_prefix}/lib/python%{python_version}
 ########################################
 # documentation
 ########################################
@@ -219,7 +221,7 @@ ln -s python%{python_version}.1.gz ${RPM_BUILD_ROOT}%{_mandir}/man1/python.1.gz
 # devel
 ########################################
 # install Makefile.pre.in and Makefile.pre
-cp Makefile Makefile.pre.in Makefile.pre $RPM_BUILD_ROOT%{_libdir}/python%{python_version}/config/
+cp Makefile Makefile.pre.in Makefile.pre $RPM_BUILD_ROOT%{_prefix}/lib/python%{python_version}/config/
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -232,24 +234,24 @@ rm -rf $RPM_BUILD_ROOT
 
 %files -n python-devel
 %defattr(-, root, root)
-%{_libdir}/python%{python_version}/config/*
-%exclude %{_libdir}/python%{python_version}/config/Setup
-%exclude %{_libdir}/python%{python_version}/config/Makefile
+%{_prefix}/lib/python%{python_version}/config/*
+%exclude %{_prefix}/lib/python%{python_version}/config/Setup
+%exclude %{_prefix}/lib/python%{python_version}/config/Makefile
 %defattr(644, root, root, 755)
 %{_libdir}/libpython*.so
 %{_libdir}/pkgconfig/python-%{python_version}.pc
 %{_libdir}/pkgconfig/python.pc
 %{_includedir}/python*
 %exclude %{_includedir}/python%{python_version}/pyconfig.h
-%{_libdir}/python%{python_version}/test
+%{_prefix}/lib/python%{python_version}/test
 %defattr(755, root, root)
 %{_bindir}/python-config
 %{_bindir}/python%{python_version}-config
 
 %files -n python-xml
 %defattr(644, root, root, 755)
-%{_libdir}/python%{python_version}/xml
-%{_libdir}/python%{python_version}/lib-dynload/pyexpat.so
+%{_prefix}/lib/python%{python_version}/xml
+%{_prefix}/lib/python%{python_version}/lib-dynload/pyexpat.so
 #%files -n libpython%{lib_version}
 
 %files -n libpython
@@ -267,95 +269,95 @@ rm -rf $RPM_BUILD_ROOT
 %doc %{_mandir}/man1/python%{python_version}.1*
 %dir %{_includedir}/python%{python_version}
 %{_includedir}/python%{python_version}/pyconfig.h
-%{_libdir}/python
+%{_prefix}/lib/python
 %dir /usr/lib/python%{python_version}
 %dir /usr/lib/python%{python_version}/site-packages
-%dir %{_libdir}/python%{python_version}
-%dir %{_libdir}/python%{python_version}/config
-%{_libdir}/python%{python_version}/config/Setup
-%{_libdir}/python%{python_version}/config/Makefile
-%{_libdir}/python%{python_version}/*.*
-%{_libdir}/python%{python_version}/compiler
-%{_libdir}/python%{python_version}/ctypes
-%{_libdir}/python%{python_version}/distutils
-%{_libdir}/python%{python_version}/email
-%{_libdir}/python%{python_version}/encodings
-%{_libdir}/python%{python_version}/hotshot
-%{_libdir}/python%{python_version}/importlib
-%{_libdir}/python%{python_version}/json
-%{_libdir}/python%{python_version}/lib2to3
-%{_libdir}/python%{python_version}/logging
-%{_libdir}/python%{python_version}/multiprocessing
-%{_libdir}/python%{python_version}/plat-*
-%{_libdir}/python%{python_version}/pydoc_data
-%{_libdir}/python%{python_version}/unittest
-%{_libdir}/python%{python_version}/wsgiref
-%dir %{_libdir}/python%{python_version}/site-packages
-%{_libdir}/python%{python_version}/site-packages/README
-%{_libdir}/python%{python_version}/site-packages/_local.pth
-%dir %{_libdir}/python%{python_version}/lib-dynload
-%{_libdir}/python%{python_version}/lib-dynload/_bisect.so
-#%{_libdir}/python%{python_version}/lib-dynload/_bytesio.so
-%{_libdir}/python%{python_version}/lib-dynload/_csv.so
-%{_libdir}/python%{python_version}/lib-dynload/_collections.so
-%{_libdir}/python%{python_version}/lib-dynload/_ctypes.so
-%{_libdir}/python%{python_version}/lib-dynload/_ctypes_test.so
-%{_libdir}/python%{python_version}/lib-dynload/_elementtree.so
-#%{_libdir}/python%{python_version}/lib-dynload/_fileio.so
-%{_libdir}/python%{python_version}/lib-dynload/_functools.so
-%{_libdir}/python%{python_version}/lib-dynload/_heapq.so
-%{_libdir}/python%{python_version}/lib-dynload/_hotshot.so
-%{_libdir}/python%{python_version}/lib-dynload/_io.so
-%{_libdir}/python%{python_version}/lib-dynload/_json.so
-%{_libdir}/python%{python_version}/lib-dynload/_locale.so
-%{_libdir}/python%{python_version}/lib-dynload/_lsprof.so
-%{_libdir}/python%{python_version}/lib-dynload/_md5.so
-%{_libdir}/python%{python_version}/lib-dynload/_multiprocessing.so
-%{_libdir}/python%{python_version}/lib-dynload/_random.so
-%{_libdir}/python%{python_version}/lib-dynload/_sha.so
-%{_libdir}/python%{python_version}/lib-dynload/_sha256.so
-%{_libdir}/python%{python_version}/lib-dynload/_sha512.so
-%{_libdir}/python%{python_version}/lib-dynload/_socket.so
-%{_libdir}/python%{python_version}/lib-dynload/_struct.so
-%{_libdir}/python%{python_version}/lib-dynload/_testcapi.so
-%{_libdir}/python%{python_version}/lib-dynload/array.so
-%{_libdir}/python%{python_version}/lib-dynload/binascii.so
+%dir %{_prefix}/lib/python%{python_version}
+%dir %{_prefix}/lib/python%{python_version}/config
+%{_prefix}/lib/python%{python_version}/config/Setup
+%{_prefix}/lib/python%{python_version}/config/Makefile
+%{_prefix}/lib/python%{python_version}/*.*
+%{_prefix}/lib/python%{python_version}/compiler
+%{_prefix}/lib/python%{python_version}/ctypes
+%{_prefix}/lib/python%{python_version}/distutils
+%{_prefix}/lib/python%{python_version}/email
+%{_prefix}/lib/python%{python_version}/encodings
+%{_prefix}/lib/python%{python_version}/hotshot
+%{_prefix}/lib/python%{python_version}/importlib
+%{_prefix}/lib/python%{python_version}/json
+%{_prefix}/lib/python%{python_version}/lib2to3
+%{_prefix}/lib/python%{python_version}/logging
+%{_prefix}/lib/python%{python_version}/multiprocessing
+%{_prefix}/lib/python%{python_version}/plat-*
+%{_prefix}/lib/python%{python_version}/pydoc_data
+%{_prefix}/lib/python%{python_version}/unittest
+%{_prefix}/lib/python%{python_version}/wsgiref
+%dir %{_prefix}/lib/python%{python_version}/site-packages
+%{_prefix}/lib/python%{python_version}/site-packages/README
+%{_prefix}/lib/python%{python_version}/site-packages/_local.pth
+%dir %{_prefix}/lib/python%{python_version}/lib-dynload
+%{_prefix}/lib/python%{python_version}/lib-dynload/_bisect.so
+#%{_prefix}/lib/python%{python_version}/lib-dynload/_bytesio.so
+%{_prefix}/lib/python%{python_version}/lib-dynload/_csv.so
+%{_prefix}/lib/python%{python_version}/lib-dynload/_collections.so
+%{_prefix}/lib/python%{python_version}/lib-dynload/_ctypes.so
+%{_prefix}/lib/python%{python_version}/lib-dynload/_ctypes_test.so
+%{_prefix}/lib/python%{python_version}/lib-dynload/_elementtree.so
+#%{_prefix}/lib/python%{python_version}/lib-dynload/_fileio.so
+%{_prefix}/lib/python%{python_version}/lib-dynload/_functools.so
+%{_prefix}/lib/python%{python_version}/lib-dynload/_heapq.so
+%{_prefix}/lib/python%{python_version}/lib-dynload/_hotshot.so
+%{_prefix}/lib/python%{python_version}/lib-dynload/_io.so
+%{_prefix}/lib/python%{python_version}/lib-dynload/_json.so
+%{_prefix}/lib/python%{python_version}/lib-dynload/_locale.so
+%{_prefix}/lib/python%{python_version}/lib-dynload/_lsprof.so
+%{_prefix}/lib/python%{python_version}/lib-dynload/_md5.so
+%{_prefix}/lib/python%{python_version}/lib-dynload/_multiprocessing.so
+%{_prefix}/lib/python%{python_version}/lib-dynload/_random.so
+%{_prefix}/lib/python%{python_version}/lib-dynload/_sha.so
+%{_prefix}/lib/python%{python_version}/lib-dynload/_sha256.so
+%{_prefix}/lib/python%{python_version}/lib-dynload/_sha512.so
+%{_prefix}/lib/python%{python_version}/lib-dynload/_socket.so
+%{_prefix}/lib/python%{python_version}/lib-dynload/_struct.so
+%{_prefix}/lib/python%{python_version}/lib-dynload/_testcapi.so
+%{_prefix}/lib/python%{python_version}/lib-dynload/array.so
+%{_prefix}/lib/python%{python_version}/lib-dynload/binascii.so
 #arm doesn't build this module
 %ifnarch %arm
 ##{_libdir}/python%{python_version}/lib-dynload/bz2.so
 %endif
-%{_libdir}/python%{python_version}/lib-dynload/cPickle.so
-%{_libdir}/python%{python_version}/lib-dynload/cStringIO.so
-%{_libdir}/python%{python_version}/lib-dynload/cmath.so
-%{_libdir}/python%{python_version}/lib-dynload/crypt.so
-%{_libdir}/python%{python_version}/lib-dynload/datetime.so
-%{_libdir}/python%{python_version}/lib-dynload/fcntl.so
-%{_libdir}/python%{python_version}/lib-dynload/future_builtins.so
-%{_libdir}/python%{python_version}/lib-dynload/grp.so
-%{_libdir}/python%{python_version}/lib-dynload/itertools.so
-%{_libdir}/python%{python_version}/lib-dynload/linuxaudiodev.so
-%{_libdir}/python%{python_version}/lib-dynload/math.so
-%{_libdir}/python%{python_version}/lib-dynload/mmap.so
-%{_libdir}/python%{python_version}/lib-dynload/nis.so
-%{_libdir}/python%{python_version}/lib-dynload/operator.so
-%{_libdir}/python%{python_version}/lib-dynload/ossaudiodev.so
-%{_libdir}/python%{python_version}/lib-dynload/parser.so
-%{_libdir}/python%{python_version}/lib-dynload/resource.so
-%{_libdir}/python%{python_version}/lib-dynload/select.so
-%{_libdir}/python%{python_version}/lib-dynload/spwd.so
-%{_libdir}/python%{python_version}/lib-dynload/strop.so
-%{_libdir}/python%{python_version}/lib-dynload/syslog.so
-%{_libdir}/python%{python_version}/lib-dynload/termios.so
-%{_libdir}/python%{python_version}/lib-dynload/time.so
-%{_libdir}/python%{python_version}/lib-dynload/unicodedata.so
-%{_libdir}/python%{python_version}/lib-dynload/zlib.so
-%{_libdir}/python%{python_version}/lib-dynload/_codecs*.so
-%{_libdir}/python%{python_version}/lib-dynload/_multibytecodec.so
-%{_libdir}/python%{python_version}/lib-dynload/Python-%{tarversion}-py%{python_version}.egg-info
+%{_prefix}/lib/python%{python_version}/lib-dynload/cPickle.so
+%{_prefix}/lib/python%{python_version}/lib-dynload/cStringIO.so
+%{_prefix}/lib/python%{python_version}/lib-dynload/cmath.so
+%{_prefix}/lib/python%{python_version}/lib-dynload/crypt.so
+%{_prefix}/lib/python%{python_version}/lib-dynload/datetime.so
+%{_prefix}/lib/python%{python_version}/lib-dynload/fcntl.so
+%{_prefix}/lib/python%{python_version}/lib-dynload/future_builtins.so
+%{_prefix}/lib/python%{python_version}/lib-dynload/grp.so
+%{_prefix}/lib/python%{python_version}/lib-dynload/itertools.so
+%{_prefix}/lib/python%{python_version}/lib-dynload/linuxaudiodev.so
+%{_prefix}/lib/python%{python_version}/lib-dynload/math.so
+%{_prefix}/lib/python%{python_version}/lib-dynload/mmap.so
+%{_prefix}/lib/python%{python_version}/lib-dynload/nis.so
+%{_prefix}/lib/python%{python_version}/lib-dynload/operator.so
+%{_prefix}/lib/python%{python_version}/lib-dynload/ossaudiodev.so
+%{_prefix}/lib/python%{python_version}/lib-dynload/parser.so
+%{_prefix}/lib/python%{python_version}/lib-dynload/resource.so
+%{_prefix}/lib/python%{python_version}/lib-dynload/select.so
+%{_prefix}/lib/python%{python_version}/lib-dynload/spwd.so
+%{_prefix}/lib/python%{python_version}/lib-dynload/strop.so
+%{_prefix}/lib/python%{python_version}/lib-dynload/syslog.so
+%{_prefix}/lib/python%{python_version}/lib-dynload/termios.so
+%{_prefix}/lib/python%{python_version}/lib-dynload/time.so
+%{_prefix}/lib/python%{python_version}/lib-dynload/unicodedata.so
+%{_prefix}/lib/python%{python_version}/lib-dynload/zlib.so
+%{_prefix}/lib/python%{python_version}/lib-dynload/_codecs*.so
+%{_prefix}/lib/python%{python_version}/lib-dynload/_multibytecodec.so
+%{_prefix}/lib/python%{python_version}/lib-dynload/Python-%{tarversion}-py%{python_version}.egg-info
 # these modules don't support 64-bit arches (disabled by setup.py)
 %ifnarch alpha ia64 x86_64 s390x ppc64 sparc64
 # requires sizeof(int) == sizeof(long) == sizeof(char*)
-%{_libdir}/python%{python_version}/lib-dynload/dl.so
+%{_prefix}/lib/python%{python_version}/lib-dynload/dl.so
 %endif
 %attr(755, root, root) %{_bindir}/pydoc
 %attr(755, root, root) %{_bindir}/python
