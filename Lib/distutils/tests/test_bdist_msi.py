@@ -11,7 +11,7 @@ class BDistMSITestCase(support.TempdirManager,
                        support.LoggingSilencer,
                        unittest.TestCase):
 
-    def test_minimal(self):
+    def test_minial(self):
         # minimal test XXX need more tests
         from distutils.command.bdist_msi import bdist_msi
         pkg_pth, dist = self.create_dist()

@@ -66,8 +66,6 @@ are still reachable.
    containing circular references.  See the documentation of the :mod:`gc`
    module for information on controlling the collection of cyclic garbage.
    Other implementations act differently and CPython may change.
-   Do not depend on immediate finalization of objects when they become
-   unreachable (ex: always close files).
 
 Note that the use of the implementation's tracing or debugging facilities may
 keep objects alive that would normally be collectable. Also note that catching
@@ -691,7 +689,7 @@ Callable types
       an object passed to the C function as an implicit extra argument.  An example of
       a built-in method is ``alist.append()``, assuming *alist* is a list object. In
       this case, the special read-only attribute :attr:`__self__` is set to the object
-      denoted by *alist*.
+      denoted by *list*.
 
    Class Types
       Class types, or "new-style classes," are callable.  These objects normally act
@@ -1282,8 +1280,6 @@ Basic customization
       modules are still available at the time when the :meth:`__del__` method is
       called.
 
-   See also the :option:`-R` command-line option.
-
 
 .. method:: object.__repr__(self)
 
@@ -1541,11 +1537,11 @@ Implementing Descriptors
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
 The following methods only apply when an instance of the class containing the
-method (a so-called *descriptor* class) appears in an *owner* class (the
-descriptor must be in either the owner's class dictionary or in the class
-dictionary for one of its parents).  In the examples below, "the attribute"
-refers to the attribute whose name is the key of the property in the owner
-class' :attr:`__dict__`.
+method (a so-called *descriptor* class) appears in the class dictionary of
+another new-style class, known as the *owner* class. In the examples below, "the
+attribute" refers to the attribute whose name is the key of the property in the
+owner class' ``__dict__``.  Descriptors can only be implemented as new-style
+classes themselves.
 
 
 .. method:: object.__get__(self, instance, owner)
@@ -1610,7 +1606,7 @@ Super Binding
    If ``a`` is an instance of :class:`super`, then the binding ``super(B,
    obj).m()`` searches ``obj.__class__.__mro__`` for the base class ``A``
    immediately preceding ``B`` and then invokes the descriptor with the call:
-   ``A.__dict__['m'].__get__(obj, obj.__class__)``.
+   ``A.__dict__['m'].__get__(obj, A)``.
 
 For instance bindings, the precedence of descriptor invocation depends on the
 which descriptor methods are defined.  A descriptor can define any combination
@@ -2310,7 +2306,7 @@ will not be supported.
 
 *
 
-  In ``x * y``, if one operand is a sequence that implements sequence
+  In ``x * y``, if one operator is a sequence that implements sequence
   repetition, and the other is an integer (:class:`int` or :class:`long`),
   sequence repetition is invoked.
 

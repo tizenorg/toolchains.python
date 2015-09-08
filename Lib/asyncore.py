@@ -54,11 +54,7 @@ import warnings
 
 import os
 from errno import EALREADY, EINPROGRESS, EWOULDBLOCK, ECONNRESET, EINVAL, \
-     ENOTCONN, ESHUTDOWN, EINTR, EISCONN, EBADF, ECONNABORTED, EPIPE, EAGAIN, \
-     errorcode
-
-_DISCONNECTED = frozenset((ECONNRESET, ENOTCONN, ESHUTDOWN, ECONNABORTED, EPIPE,
-                           EBADF))
+     ENOTCONN, ESHUTDOWN, EINTR, EISCONN, EBADF, ECONNABORTED, errorcode
 
 try:
     socket_map
@@ -113,7 +109,7 @@ def readwrite(obj, flags):
         if flags & (select.POLLHUP | select.POLLERR | select.POLLNVAL):
             obj.handle_close()
     except socket.error, e:
-        if e.args[0] not in _DISCONNECTED:
+        if e.args[0] not in (EBADF, ECONNRESET, ENOTCONN, ESHUTDOWN, ECONNABORTED):
             obj.handle_error()
         else:
             obj.handle_close()
@@ -132,8 +128,7 @@ def poll(timeout=0.0, map=None):
             is_w = obj.writable()
             if is_r:
                 r.append(fd)
-            # accepting sockets should not be writable
-            if is_w and not obj.accepting:
+            if is_w:
                 w.append(fd)
             if is_r or is_w:
                 e.append(fd)
@@ -180,8 +175,7 @@ def poll2(timeout=0.0, map=None):
             flags = 0
             if obj.readable():
                 flags |= select.POLLIN | select.POLLPRI
-            # accepting sockets should not be writable
-            if obj.writable() and not obj.accepting:
+            if obj.writable():
                 flags |= select.POLLOUT
             if flags:
                 # Only check for exceptions if object was either readable
@@ -359,7 +353,7 @@ class dispatcher:
         except TypeError:
             return None
         except socket.error as why:
-            if why.args[0] in (EWOULDBLOCK, ECONNABORTED, EAGAIN):
+            if why.args[0] in (EWOULDBLOCK, ECONNABORTED):
                 return None
             else:
                 raise
@@ -373,7 +367,7 @@ class dispatcher:
         except socket.error, why:
             if why.args[0] == EWOULDBLOCK:
                 return 0
-            elif why.args[0] in _DISCONNECTED:
+            elif why.args[0] in (ECONNRESET, ENOTCONN, ESHUTDOWN, ECONNABORTED):
                 self.handle_close()
                 return 0
             else:
@@ -391,7 +385,7 @@ class dispatcher:
                 return data
         except socket.error, why:
             # winsock sometimes throws ENOTCONN
-            if why.args[0] in _DISCONNECTED:
+            if why.args[0] in [ECONNRESET, ENOTCONN, ESHUTDOWN, ECONNABORTED]:
                 self.handle_close()
                 return ''
             else:

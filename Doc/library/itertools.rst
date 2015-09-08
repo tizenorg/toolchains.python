@@ -237,7 +237,7 @@ loops that truncate the stream.
 
       def count(start=0, step=1):
           # count(10) --> 10 11 12 13 14 ...
-          # count(2.5, 0.5) -> 2.5 3.0 3.5 ...
+          # count(2.5, 0.5) -> 3.5 3.0 4.5 ...
           n = start
           while True:
               yield n
@@ -433,9 +433,9 @@ loops that truncate the stream.
 
       def izip(*iterables):
           # izip('ABCD', 'xy') --> Ax By
-          iterators = map(iter, iterables)
-          while iterators:
-              yield tuple(map(next, iterators))
+          iterables = map(iter, iterables)
+          while iterables:
+              yield tuple(map(next, iterables))
 
    .. versionchanged:: 2.4
       When no iterables are specified, returns a zero length iterator instead of
@@ -456,24 +456,17 @@ loops that truncate the stream.
    iterables are of uneven length, missing values are filled-in with *fillvalue*.
    Iteration continues until the longest iterable is exhausted.  Equivalent to::
 
-      class ZipExhausted(Exception):
-          pass
-
       def izip_longest(*args, **kwds):
           # izip_longest('ABCD', 'xy', fillvalue='-') --> Ax By C- D-
           fillvalue = kwds.get('fillvalue')
-          counter = [len(args) - 1]
-          def sentinel():
-              if not counter[0]:
-                  raise ZipExhausted
-              counter[0] -= 1
-              yield fillvalue
+          def sentinel(counter = ([fillvalue]*(len(args)-1)).pop):
+              yield counter()         # yields the fillvalue, or raises IndexError
           fillers = repeat(fillvalue)
-          iterators = [chain(it, sentinel(), fillers) for it in args]
+          iters = [chain(it, sentinel(), fillers) for it in args]
           try:
-              while iterators:
-                  yield tuple(map(next, iterators))
-          except ZipExhausted:
+              for tup in izip(*iters):
+                  yield tup
+          except IndexError:
               pass
 
    If one of the iterables is potentially infinite, then the
@@ -590,11 +583,6 @@ loops that truncate the stream.
               for i in xrange(times):
                   yield object
 
-   A common use for *repeat* is to supply a stream of constant values to *imap*
-   or *zip*::
-
-      >>> list(imap(pow, xrange(10), repeat(2)))
-      [0, 1, 4, 9, 16, 25, 36, 49, 64, 81]
 
 .. function:: starmap(function, iterable)
 

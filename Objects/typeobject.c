@@ -313,7 +313,7 @@ type_abstractmethods(PyTypeObject *type, void *context)
     if (type != &PyType_Type)
         mod = PyDict_GetItemString(type->tp_dict, "__abstractmethods__");
     if (!mod) {
-        PyErr_SetString(PyExc_AttributeError, "__abstractmethods__");
+        PyErr_Format(PyExc_AttributeError, "__abstractmethods__");
         return NULL;
     }
     Py_XINCREF(mod);
@@ -327,17 +327,8 @@ type_set_abstractmethods(PyTypeObject *type, PyObject *value, void *context)
        abc.ABCMeta.__new__, so this function doesn't do anything
        special to update subclasses.
     */
-    int res;
-    if (value != NULL) {
-        res = PyDict_SetItemString(type->tp_dict, "__abstractmethods__", value);
-    }
-    else {
-        res = PyDict_DelItemString(type->tp_dict, "__abstractmethods__");
-        if (res && PyErr_ExceptionMatches(PyExc_KeyError)) {
-            PyErr_SetString(PyExc_AttributeError, "__abstractmethods__");
-            return -1;
-        }
-    }
+    int res = PyDict_SetItemString(type->tp_dict,
+                                   "__abstractmethods__", value);
     if (res == 0) {
         PyType_Modified(type);
         if (value && PyObject_IsTrue(value)) {
@@ -1054,7 +1045,7 @@ subtype_dealloc(PyObject *self)
           self has a refcount of 0, and if gc ever gets its hands on it
           (which can happen if any weakref callback gets invoked), it
           looks like trash to gc too, and gc also tries to delete self
-          then.  But we're already deleting self.  Double deallocation is
+          then.  But we're already deleting self.  Double dealloction is
           a subtle disaster.
 
        Q. Why the bizarre (net-zero) manipulation of
@@ -2233,10 +2224,8 @@ type_new(PyTypeObject *metatype, PyObject *args, PyObject *kwds)
                 (add_weak && strcmp(s, "__weakref__") == 0))
                 continue;
             tmp =_Py_Mangle(name, tmp);
-            if (!tmp) {
-                Py_DECREF(newslots);
+            if (!tmp)
                 goto bad_slots;
-            }
             PyList_SET_ITEM(newslots, j, tmp);
             j++;
         }
@@ -2667,9 +2656,9 @@ static PyMethodDef type_methods[] = {
     {"__subclasses__", (PyCFunction)type_subclasses, METH_NOARGS,
      PyDoc_STR("__subclasses__() -> list of immediate subclasses")},
     {"__instancecheck__", type___instancecheck__, METH_O,
-     PyDoc_STR("__instancecheck__() -> bool\ncheck if an object is an instance")},
+     PyDoc_STR("__instancecheck__() -> check if an object is an instance")},
     {"__subclasscheck__", type___subclasscheck__, METH_O,
-     PyDoc_STR("__subclasscheck__() -> bool\ncheck if a class is a subclass")},
+     PyDoc_STR("__subclasscheck__() -> check if a class is a subclass")},
     {0}
 };
 
@@ -2705,15 +2694,14 @@ type_clear(PyTypeObject *type)
        for heaptypes. */
     assert(type->tp_flags & Py_TPFLAGS_HEAPTYPE);
 
-    /* We need to invalidate the method cache carefully before clearing
-       the dict, so that other objects caught in a reference cycle
-       don't start calling destroyed methods.
-
-       Otherwise, the only field we need to clear is tp_mro, which is
-       part of a hard cycle (its first element is the class itself) that
-       won't be broken otherwise (it's a tuple and tuples don't have a
+    /* The only field we need to clear is tp_mro, which is part of a
+       hard cycle (its first element is the class itself) that won't
+       be broken otherwise (it's a tuple and tuples don't have a
        tp_clear handler).  None of the other fields need to be
        cleared, and here's why:
+
+       tp_dict:
+           It is a dict, so the collector will call its tp_clear.
 
        tp_cache:
            Not used; if it were, it would be a dict.
@@ -2731,9 +2719,6 @@ type_clear(PyTypeObject *type)
            A tuple of strings can't be part of a cycle.
     */
 
-    PyType_Modified(type);
-    if (type->tp_dict)
-        PyDict_Clear(type->tp_dict);
     Py_CLEAR(type->tp_mro);
 
     return 0;
@@ -2984,7 +2969,7 @@ object_str(PyObject *self)
     unaryfunc f;
 
     f = Py_TYPE(self)->tp_repr;
-    if (f == NULL || f == object_str)
+    if (f == NULL)
         f = object_repr;
     return f(self);
 }
@@ -3017,7 +3002,10 @@ same_slots_added(PyTypeObject *a, PyTypeObject *b)
     Py_ssize_t size;
     PyObject *slots_a, *slots_b;
 
-    assert(base == b->tp_base);
+    if (base != b->tp_base)
+        return 0;
+    if (equiv_structs(a, base) && equiv_structs(b, base))
+        return 1;
     size = base->tp_basicsize;
     if (a->tp_dictoffset == size && b->tp_dictoffset == size)
         size += sizeof(PyObject *);
@@ -3496,7 +3484,7 @@ static PyMethodDef object_methods[] = {
     {"__format__", object_format, METH_VARARGS,
      PyDoc_STR("default object formatter")},
     {"__sizeof__", object_sizeof, METH_NOARGS,
-     PyDoc_STR("__sizeof__() -> int\nsize of object in memory, in bytes")},
+     PyDoc_STR("__sizeof__() -> size of object in memory, in bytes")},
     {0}
 };
 
@@ -5939,27 +5927,27 @@ static slotdef slotdefs[] = {
     NBSLOT("__index__", nb_index, slot_nb_index, wrap_unaryfunc,
            "x[y:z] <==> x[y.__index__():z.__index__()]"),
     IBSLOT("__iadd__", nb_inplace_add, slot_nb_inplace_add,
-           wrap_binaryfunc, "+="),
+           wrap_binaryfunc, "+"),
     IBSLOT("__isub__", nb_inplace_subtract, slot_nb_inplace_subtract,
-           wrap_binaryfunc, "-="),
+           wrap_binaryfunc, "-"),
     IBSLOT("__imul__", nb_inplace_multiply, slot_nb_inplace_multiply,
-           wrap_binaryfunc, "*="),
+           wrap_binaryfunc, "*"),
     IBSLOT("__idiv__", nb_inplace_divide, slot_nb_inplace_divide,
-           wrap_binaryfunc, "/="),
+           wrap_binaryfunc, "/"),
     IBSLOT("__imod__", nb_inplace_remainder, slot_nb_inplace_remainder,
-           wrap_binaryfunc, "%="),
+           wrap_binaryfunc, "%"),
     IBSLOT("__ipow__", nb_inplace_power, slot_nb_inplace_power,
-           wrap_binaryfunc, "**="),
+           wrap_binaryfunc, "**"),
     IBSLOT("__ilshift__", nb_inplace_lshift, slot_nb_inplace_lshift,
-           wrap_binaryfunc, "<<="),
+           wrap_binaryfunc, "<<"),
     IBSLOT("__irshift__", nb_inplace_rshift, slot_nb_inplace_rshift,
-           wrap_binaryfunc, ">>="),
+           wrap_binaryfunc, ">>"),
     IBSLOT("__iand__", nb_inplace_and, slot_nb_inplace_and,
-           wrap_binaryfunc, "&="),
+           wrap_binaryfunc, "&"),
     IBSLOT("__ixor__", nb_inplace_xor, slot_nb_inplace_xor,
-           wrap_binaryfunc, "^="),
+           wrap_binaryfunc, "^"),
     IBSLOT("__ior__", nb_inplace_or, slot_nb_inplace_or,
-           wrap_binaryfunc, "|="),
+           wrap_binaryfunc, "|"),
     BINSLOT("__floordiv__", nb_floor_divide, slot_nb_floor_divide, "//"),
     RBINSLOT("__rfloordiv__", nb_floor_divide, slot_nb_floor_divide, "//"),
     BINSLOT("__truediv__", nb_true_divide, slot_nb_true_divide, "/"),
@@ -6351,7 +6339,7 @@ recurse_down_subclasses(PyTypeObject *type, PyObject *name,
    slots compete for the same descriptor (for example both sq_item and
    mp_subscript generate a __getitem__ descriptor).
 
-   In the latter case, the first slotdef entry encountered wins.  Since
+   In the latter case, the first slotdef entry encoutered wins.  Since
    slotdef entries are sorted by the offset of the slot in the
    PyHeapTypeObject, this gives us some control over disambiguating
    between competing slots: the members of PyHeapTypeObject are listed

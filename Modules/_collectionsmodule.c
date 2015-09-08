@@ -485,8 +485,7 @@ deque_reverse(dequeobject *deque, PyObject *unused)
         /* Advance left block/index pair */
         leftindex++;
         if (leftindex == BLOCKLEN) {
-            if (leftblock->rightlink == NULL)
-                break;
+            assert (leftblock->rightlink != NULL);
             leftblock = leftblock->rightlink;
             leftindex = 0;
         }
@@ -494,8 +493,7 @@ deque_reverse(dequeobject *deque, PyObject *unused)
         /* Step backwards with the right block/index pair */
         rightindex--;
         if (rightindex == -1) {
-            if (rightblock->leftlink == NULL)
-                break;
+            assert (rightblock->leftlink != NULL);
             rightblock = rightblock->leftlink;
             rightindex = BLOCKLEN - 1;
         }
@@ -511,7 +509,7 @@ deque_count(dequeobject *deque, PyObject *v)
 {
     block *leftblock = deque->leftblock;
     Py_ssize_t leftindex = deque->leftindex;
-    Py_ssize_t n = deque->len;
+    Py_ssize_t n = (deque->len);
     Py_ssize_t i;
     Py_ssize_t count = 0;
     PyObject *item;
@@ -535,8 +533,7 @@ deque_count(dequeobject *deque, PyObject *v)
         /* Advance left block/index pair */
         leftindex++;
         if (leftindex == BLOCKLEN) {
-            if (leftblock->rightlink == NULL)  /* can occur when i==n-1 */
-                break;
+            assert (leftblock->rightlink != NULL);
             leftblock = leftblock->rightlink;
             leftindex = 0;
         }
@@ -1060,7 +1057,7 @@ static PyMethodDef deque_methods[] = {
 PyDoc_STRVAR(deque_doc,
 "deque(iterable[, maxlen]) --> deque object\n\
 \n\
-Build an ordered collection with optimized access from its endpoints.");
+Build an ordered collection accessible from endpoints only.");
 
 static PyTypeObject deque_type = {
     PyVarObject_HEAD_INIT(NULL, 0)
@@ -1475,10 +1472,8 @@ defdict_repr(defdictobject *dd)
     {
         int status = Py_ReprEnter(dd->default_factory);
         if (status != 0) {
-            if (status < 0) {
-                Py_DECREF(baserepr);
+            if (status < 0)
                 return NULL;
-            }
             defrepr = PyString_FromString("...");
         }
         else

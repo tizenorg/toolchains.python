@@ -335,7 +335,7 @@ class CoverageResults:
                                                       lnotab, count)
 
             if summary and n_lines:
-                percent = 100 * n_hits // n_lines
+                percent = int(100 * n_hits / n_lines)
                 sums[modulename] = n_lines, percent, modulename, filename
 
         if summary and sums:
@@ -502,7 +502,15 @@ class Trace:
     def run(self, cmd):
         import __main__
         dict = __main__.__dict__
-        self.runctx(cmd, dict, dict)
+        if not self.donothing:
+            threading.settrace(self.globaltrace)
+            sys.settrace(self.globaltrace)
+        try:
+            exec cmd in dict, dict
+        finally:
+            if not self.donothing:
+                sys.settrace(None)
+                threading.settrace(None)
 
     def runctx(self, cmd, globals=None, locals=None):
         if globals is None: globals = {}

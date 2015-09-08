@@ -28,8 +28,8 @@ class CompilerTest(unittest.TestCase):
         libdir = os.path.dirname(os.__file__)
         testdir = os.path.dirname(test.test_support.__file__)
 
-        for dir in [testdir]:
-            for basename in "test_os.py",:
+        for dir in [libdir, testdir]:
+            for basename in os.listdir(dir):
                 # Print still working message since this test can be really slow
                 if next_time <= time.time():
                     next_time = time.time() + _PRINT_WORKING_MSG_INTERVAL

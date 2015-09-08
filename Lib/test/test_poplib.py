@@ -281,34 +281,32 @@ class TestTimeouts(TestCase):
     def setUp(self):
         self.evt = threading.Event()
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.sock.settimeout(60)  # Safety net. Look issue 11812
+        self.sock.settimeout(3)
         self.port = test_support.bind_port(self.sock)
-        self.thread = threading.Thread(target=self.server, args=(self.evt,self.sock))
-        self.thread.setDaemon(True)
-        self.thread.start()
-        self.evt.wait()
+        threading.Thread(target=self.server, args=(self.evt,self.sock)).start()
+        time.sleep(.1)
 
     def tearDown(self):
-        self.thread.join()
-        del self.thread  # Clear out any dangling Thread objects.
+        self.evt.wait()
 
     def server(self, evt, serv):
         serv.listen(5)
-        evt.set()
         try:
             conn, addr = serv.accept()
-            conn.send("+ Hola mundo\n")
-            conn.close()
         except socket.timeout:
             pass
+        else:
+            conn.send("+ Hola mundo\n")
+            conn.close()
         finally:
             serv.close()
+            evt.set()
 
     def testTimeoutDefault(self):
         self.assertTrue(socket.getdefaulttimeout() is None)
         socket.setdefaulttimeout(30)
         try:
-            pop = poplib.POP3(HOST, self.port)
+            pop = poplib.POP3("localhost", self.port)
         finally:
             socket.setdefaulttimeout(None)
         self.assertEqual(pop.sock.gettimeout(), 30)
@@ -325,7 +323,7 @@ class TestTimeouts(TestCase):
         pop.sock.close()
 
     def testTimeoutValue(self):
-        pop = poplib.POP3(HOST, self.port, timeout=30)
+        pop = poplib.POP3("localhost", self.port, timeout=30)
         self.assertEqual(pop.sock.gettimeout(), 30)
         pop.sock.close()
 

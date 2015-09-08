@@ -1,3 +1,4 @@
+
 :mod:`collections` --- High-performance container datatypes
 ===========================================================
 
@@ -14,10 +15,6 @@
    import itertools
    __name__ = '<doctest>'
 
-**Source code:** :source:`Lib/collections.py` and :source:`Lib/_abcoll.py`
-
---------------
-
 This module implements specialized container datatypes providing alternatives to
 Python's general purpose built-in containers, :class:`dict`, :class:`list`,
 :class:`set`, and :class:`tuple`.
@@ -30,11 +27,15 @@ Python's general purpose built-in containers, :class:`dict`, :class:`list`,
 :class:`defaultdict`    dict subclass that calls a factory function to supply missing values  .. versionadded:: 2.5
 =====================   ====================================================================  ===========================
 
-In addition to the concrete container classes, the collections module provides
-:ref:`abstract base classes <collections-abstract-base-classes>` that can be
-used to test whether a class provides a particular interface, for example,
-whether it is hashable or a mapping.
+In addition to containers, the collections module provides some ABCs
+(abstract base classes) that can be used to test whether a class
+provides a particular interface, for example, whether it is hashable or
+a mapping.
 
+.. seealso::
+
+   Latest version of the `collections module Python source code
+   <http://svn.python.org/view/python/branches/release27-maint/Lib/collections.py?view=markup>`_
 
 :class:`Counter` objects
 ------------------------
@@ -188,7 +189,7 @@ counts, but the output will exclude results with counts of zero or less.
    * The multiset methods are designed only for use cases with positive values.
      The inputs may be negative or zero, but only outputs with positive values
      are created.  There are no type restrictions, but the value type needs to
-     support addition, subtraction, and comparison.
+     support support addition, subtraction, and comparison.
 
    * The :meth:`elements` method requires integer counts.  It ignores zero and
      negative counts.
@@ -202,14 +203,14 @@ counts, but the output will exclude results with counts of zero or less.
     * `Bag class <http://www.gnu.org/software/smalltalk/manual-base/html_node/Bag.html>`_
       in Smalltalk.
 
-    * Wikipedia entry for `Multisets <http://en.wikipedia.org/wiki/Multiset>`_.
+    * Wikipedia entry for `Multisets <http://en.wikipedia.org/wiki/Multiset>`_\.
 
     * `C++ multisets <http://www.demo2s.com/Tutorial/Cpp/0380__set-multiset/Catalog0380__set-multiset.htm>`_
       tutorial with examples.
 
     * For mathematical operations on multisets and their use cases, see
       *Knuth, Donald. The Art of Computer Programming Volume II,
-      Section 4.6.3, Exercise 19*.
+      Section 4.6.3, Exercise 19*\.
 
     * To enumerate all distinct multisets of a given size over a given set of
       elements, see :func:`itertools.combinations_with_replacement`.
@@ -453,7 +454,8 @@ stack manipulations such as ``dup``, ``drop``, ``swap``, ``over``, ``pick``,
    :class:`defaultdict` objects support the following method in addition to the
    standard :class:`dict` operations:
 
-   .. method:: __missing__(key)
+
+   .. method:: defaultdict.__missing__(key)
 
       If the :attr:`default_factory` attribute is ``None``, this raises a
       :exc:`KeyError` exception with the *key* as argument.
@@ -469,16 +471,11 @@ stack manipulations such as ``dup``, ``drop``, ``swap``, ``over``, ``pick``,
       :class:`dict` class when the requested key is not found; whatever it
       returns or raises is then returned or raised by :meth:`__getitem__`.
 
-      Note that :meth:`__missing__` is *not* called for any operations besides
-      :meth:`__getitem__`. This means that :meth:`get` will, like normal
-      dictionaries, return ``None`` as a default rather than using
-      :attr:`default_factory`.
-
 
    :class:`defaultdict` objects support the following instance variable:
 
 
-   .. attribute:: default_factory
+   .. attribute:: defaultdict.default_factory
 
       This attribute is used by the :meth:`__missing__` method; it is
       initialized from the first argument to the constructor, if present, or to
@@ -569,9 +566,9 @@ they add the ability to access fields by name instead of position index.
    helpful docstring (with typename and field_names) and a helpful :meth:`__repr__`
    method which lists the tuple contents in a ``name=value`` format.
 
-   The *field_names* are a sequence of strings such as ``['x', 'y']``.
-   Alternatively, *field_names* can be a single string with each fieldname
-   separated by whitespace and/or commas, for example ``'x y'`` or ``'x, y'``.
+   The *field_names* are a single string with each fieldname separated by whitespace
+   and/or commas, for example ``'x y'`` or ``'x, y'``.  Alternatively, *field_names*
+   can be a sequence of strings such as ``['x', 'y']``.
 
    Any valid Python identifier may be used for a fieldname except for names
    starting with an underscore.  Valid identifiers consist of letters, digits,
@@ -599,7 +596,7 @@ Example:
 .. doctest::
    :options: +NORMALIZE_WHITESPACE
 
-   >>> Point = namedtuple('Point', ['x', 'y'], verbose=True)
+   >>> Point = namedtuple('Point', 'x y', verbose=True)
    class Point(tuple):
            'Point(x, y)'
    <BLANKLINE>
@@ -627,9 +624,7 @@ Example:
                'Return a new OrderedDict which maps field names to their values'
                return OrderedDict(zip(self._fields, self))
    <BLANKLINE>
-          __dict__ = property(_asdict)
-   <BLANKLINE>
-          def _replace(_self, **kwds):
+           def _replace(_self, **kwds):
                'Return a new Point object replacing specified fields with new values'
                result = _self._make(map(kwds.pop, ('x', 'y'), _self))
                if kwds:
@@ -705,7 +700,7 @@ field names, the method and attribute names start with an underscore.
       Point(x=33, y=22)
 
       >>> for partnum, record in inventory.items():
-              inventory[partnum] = record._replace(price=newprices[partnum], timestamp=time.now())
+      ...     inventory[partnum] = record._replace(price=newprices[partnum], timestamp=time.now())
 
 .. attribute:: somenamedtuple._fields
 
@@ -740,15 +735,15 @@ functionality with a subclass.  Here is how to add a calculated field and
 a fixed-width print format:
 
     >>> class Point(namedtuple('Point', 'x y')):
-            __slots__ = ()
-            @property
-            def hypot(self):
-                return (self.x ** 2 + self.y ** 2) ** 0.5
-            def __str__(self):
-                return 'Point: x=%6.3f  y=%6.3f  hypot=%6.3f' % (self.x, self.y, self.hypot)
+    ...     __slots__ = ()
+    ...     @property
+    ...     def hypot(self):
+    ...         return (self.x ** 2 + self.y ** 2) ** 0.5
+    ...     def __str__(self):
+    ...         return 'Point: x=%6.3f  y=%6.3f  hypot=%6.3f' % (self.x, self.y, self.hypot)
 
     >>> for p in Point(3, 4), Point(14, 5/7.):
-            print p
+    ...     print p
     Point: x= 3.000  y= 4.000  hypot= 5.000
     Point: x=14.000  y= 0.714  hypot=14.018
 
@@ -774,7 +769,7 @@ and more efficient to use a simple class declaration:
     >>> Status.open, Status.pending, Status.closed
     (0, 1, 2)
     >>> class Status:
-            open, pending, closed = range(3)
+    ...     open, pending, closed = range(3)
 
 .. seealso::
 
@@ -824,9 +819,6 @@ semantics pass-in keyword arguments using a regular unordered dictionary.
    `Equivalent OrderedDict recipe <http://code.activestate.com/recipes/576693/>`_
    that runs on Python 2.4 or later.
 
-:class:`OrderedDict` Examples and Recipes
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
 Since an ordered dictionary remembers its insertion order, it can be used
 in conjuction with sorting to make a sorted dictionary::
 
@@ -855,35 +847,20 @@ If a new entry overwrites an existing entry, the
 original insertion position is changed and moved to the end::
 
     class LastUpdatedOrderedDict(OrderedDict):
-        'Store items in the order the keys were last added'
-
+        'Store items is the order the keys were last added'
         def __setitem__(self, key, value):
             if key in self:
                 del self[key]
             OrderedDict.__setitem__(self, key, value)
 
-An ordered dictionary can be combined with the :class:`Counter` class
-so that the counter remembers the order elements are first encountered::
 
-   class OrderedCounter(Counter, OrderedDict):
-        'Counter that remembers the order elements are first encountered'
+ABCs - abstract base classes
+----------------------------
 
-        def __repr__(self):
-            return '%s(%r)' % (self.__class__.__name__, OrderedDict(self))
-
-        def __reduce__(self):
-            return self.__class__, (OrderedDict(self),)
-
-
-.. _collections-abstract-base-classes:
-
-Collections Abstract Base Classes
----------------------------------
-
-The collections module offers the following :term:`ABCs <abstract base class>`:
+The collections module offers the following ABCs:
 
 =========================  =====================  ======================  ====================================================
-ABC                        Inherits from          Abstract Methods        Mixin Methods
+ABC                        Inherits               Abstract Methods        Mixin Methods
 =========================  =====================  ======================  ====================================================
 :class:`Container`                                ``__contains__``
 :class:`Hashable`                                 ``__hash__``
@@ -892,19 +869,19 @@ ABC                        Inherits from          Abstract Methods        Mixin 
 :class:`Sized`                                    ``__len__``
 :class:`Callable`                                 ``__call__``
 
-:class:`Sequence`          :class:`Sized`,        ``__getitem__``         ``__contains__``, ``__iter__``, ``__reversed__``,
+:class:`Sequence`          :class:`Sized`,        ``__getitem__``         ``__contains__``. ``__iter__``, ``__reversed__``.
                            :class:`Iterable`,                             ``index``, and ``count``
                            :class:`Container`
 
-:class:`MutableSequence`   :class:`Sequence`      ``__setitem__``,        Inherited :class:`Sequence` methods and
+:class:`MutableSequence`   :class:`Sequence`      ``__setitem__``         Inherited Sequence methods and
                                                   ``__delitem__``,        ``append``, ``reverse``, ``extend``, ``pop``,
-                                                  ``insert``              ``remove``, and ``__iadd__``
+                                                  and ``insert``          ``remove``, and ``__iadd__``
 
 :class:`Set`               :class:`Sized`,                                ``__le__``, ``__lt__``, ``__eq__``, ``__ne__``,
-                           :class:`Iterable`,                             ``__gt__``, ``__ge__``, ``__and__``, ``__or__``,
+                           :class:`Iterable`,                             ``__gt__``, ``__ge__``, ``__and__``, ``__or__``
                            :class:`Container`                             ``__sub__``, ``__xor__``, and ``isdisjoint``
 
-:class:`MutableSet`        :class:`Set`           ``add``,                Inherited :class:`Set` methods and
+:class:`MutableSet`        :class:`Set`           ``add`` and             Inherited Set methods and
                                                   ``discard``             ``clear``, ``pop``, ``remove``, ``__ior__``,
                                                                           ``__iand__``, ``__ixor__``, and ``__isub__``
 
@@ -912,60 +889,18 @@ ABC                        Inherits from          Abstract Methods        Mixin 
                            :class:`Iterable`,                             ``get``, ``__eq__``, and ``__ne__``
                            :class:`Container`
 
-:class:`MutableMapping`    :class:`Mapping`       ``__setitem__``,        Inherited :class:`Mapping` methods and
+:class:`MutableMapping`    :class:`Mapping`       ``__setitem__`` and     Inherited Mapping methods and
                                                   ``__delitem__``         ``pop``, ``popitem``, ``clear``, ``update``,
                                                                           and ``setdefault``
 
 
 :class:`MappingView`       :class:`Sized`                                 ``__len__``
-:class:`ItemsView`         :class:`MappingView`,                          ``__contains__``,
-                           :class:`Set`                                   ``__iter__``
 :class:`KeysView`          :class:`MappingView`,                          ``__contains__``,
+                           :class:`Set`                                   ``__iter__``
+:class:`ItemsView`         :class:`MappingView`,                          ``__contains__``,
                            :class:`Set`                                   ``__iter__``
 :class:`ValuesView`        :class:`MappingView`                           ``__contains__``, ``__iter__``
 =========================  =====================  ======================  ====================================================
-
-
-.. class:: Container
-           Hashable
-           Sized
-           Callable
-
-   ABCs for classes that provide respectively the methods :meth:`__contains__`,
-   :meth:`__hash__`, :meth:`__len__`, and :meth:`__call__`.
-
-.. class:: Iterable
-
-   ABC for classes that provide the :meth:`__iter__` method.
-   See also the definition of :term:`iterable`.
-
-.. class:: Iterator
-
-   ABC for classes that provide the :meth:`__iter__` and :meth:`next` methods.
-   See also the definition of :term:`iterator`.
-
-.. class:: Sequence
-           MutableSequence
-
-   ABCs for read-only and mutable :term:`sequences <sequence>`.
-
-.. class:: Set
-           MutableSet
-
-   ABCs for read-only and mutable sets.
-
-.. class:: Mapping
-           MutableMapping
-
-   ABCs for read-only and mutable :term:`mappings <mapping>`.
-
-.. class:: MappingView
-           ItemsView
-           KeysView
-           ValuesView
-
-   ABCs for mapping, items, keys, and values :term:`views <view>`.
-
 
 These ABCs allow us to ask classes or instances if they provide
 particular functionality, for example::
@@ -1009,7 +944,7 @@ Notes on using :class:`Set` and :class:`MutableSet` as a mixin:
    That assumption is factored-out to an internal classmethod called
    :meth:`_from_iterable` which calls ``cls(iterable)`` to produce a new set.
    If the :class:`Set` mixin is being used in a class with a different
-   constructor signature, you will need to override :meth:`_from_iterable`
+   constructor signature, you will need to override :meth:`from_iterable`
    with a classmethod that can construct new instances from
    an iterable argument.
 
@@ -1026,6 +961,9 @@ Notes on using :class:`Set` and :class:`MutableSet` as a mixin:
    ``__hash__ = Set._hash``.
 
 .. seealso::
+
+   * Latest version of the `Python source code for the collections abstract base classes
+     <http://svn.python.org/view/python/branches/release27-maint/Lib/_abcoll.py?view=markup>`_
 
    * `OrderedSet recipe <http://code.activestate.com/recipes/576694/>`_ for an
      example built on :class:`MutableSet`.

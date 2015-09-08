@@ -11,10 +11,6 @@
 
 .. versionadded:: 2.1
 
-**Source code:** :source:`Lib/weakref.py`
-
---------------
-
 The :mod:`weakref` module allows the Python programmer to create :dfn:`weak
 references` to objects.
 

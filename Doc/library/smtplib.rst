@@ -1,3 +1,4 @@
+
 :mod:`smtplib` --- SMTP protocol client
 =======================================
 
@@ -9,10 +10,6 @@
 .. index::
    pair: SMTP; protocol
    single: Simple Mail Transfer Protocol
-
-**Source code:** :source:`Lib/smtplib.py`
-
---------------
 
 The :mod:`smtplib` module defines an SMTP client session object that can be used
 to send mail to any Internet machine with an SMTP or ESMTP listener daemon.  For

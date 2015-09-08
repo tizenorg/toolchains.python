@@ -2,7 +2,6 @@
 import unittest
 import os
 import sys
-from test.test_support import run_unittest
 
 from distutils.command.build import build
 from distutils.tests import support
@@ -52,4 +51,4 @@ def test_suite():
     return unittest.makeSuite(BuildTestCase)
 
 if __name__ == "__main__":
-    run_unittest(test_suite())
+    unittest.main(defaultTest="test_suite")

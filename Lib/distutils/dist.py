@@ -4,7 +4,7 @@ Provides the Distribution class, which represents the module distribution
 being built/installed/distributed.
 """
 
-__revision__ = "$Id$"
+__revision__ = "$Id: dist.py 86238 2010-11-06 04:06:18Z eric.araujo $"
 
 import sys, os, re
 from email import message_from_file
@@ -1111,8 +1111,7 @@ class DistributionMetadata:
         """Write the PKG-INFO format data to a file object.
         """
         version = '1.0'
-        if (self.provides or self.requires or self.obsoletes or
-            self.classifiers or self.download_url):
+        if self.provides or self.requires or self.obsoletes:
             version = '1.1'
 
         self._write_field(file, 'Metadata-Version', version)

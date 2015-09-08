@@ -18,7 +18,6 @@ static void
 CThunkObject_dealloc(PyObject *_self)
 {
     CThunkObject *self = (CThunkObject *)_self;
-    PyObject_GC_UnTrack(self);
     Py_XDECREF(self->converters);
     Py_XDECREF(self->callable);
     Py_XDECREF(self->restype);
@@ -257,7 +256,7 @@ static void _CallPythonObject(void *mem,
             /* XXX XXX XX
                We have the problem that c_byte or c_short have dict->size of
                1 resp. 4, but these parameters are pushed as sizeof(int) bytes.
-               BTW, the same problem occurs when they are pushed as parameters
+               BTW, the same problem occurrs when they are pushed as parameters
             */
         } else if (dict) {
             /* Hm, shouldn't we use PyCData_AtAddress() or something like that instead? */

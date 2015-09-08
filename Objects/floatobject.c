@@ -716,20 +716,10 @@ float_rem(PyObject *v, PyObject *w)
 #endif
     PyFPE_START_PROTECT("modulo", return 0)
     mod = fmod(vx, wx);
-    if (mod) {
-        /* ensure the remainder has the same sign as the denominator */
-        if ((wx < 0) != (mod < 0)) {
-            mod += wx;
-        }
-    }
-    else {
-        /* the remainder is zero, and in the presence of signed zeroes
-           fmod returns different results across platforms; ensure
-           it has the same sign as the denominator; we'd like to do
-           "mod = wx * 0.0", but that may get optimized away */
-        mod *= mod;  /* hide "mod = +0" from optimizer */
-        if (wx < 0.0)
-            mod = -mod;
+    /* note: checking mod*wx < 0 is incorrect -- underflows to
+       0 if wx < sqrt(smallest nonzero double) */
+    if (mod && ((wx < 0) != (mod < 0))) {
+        mod += wx;
     }
     PyFPE_END_PROTECT(mod)
     return PyFloat_FromDouble(mod);
@@ -1035,17 +1025,14 @@ float_trunc(PyObject *v)
      * happens if the double is too big to fit in a long.  Some rare
      * systems raise an exception then (RISCOS was mentioned as one,
      * and someone using a non-default option on Sun also bumped into
-     * that).  Note that checking for <= LONG_MAX is unsafe: if a long
-     * has more bits of precision than a double, casting LONG_MAX to
-     * double may yield an approximation, and if that's rounded up,
-     * then, e.g., wholepart=LONG_MAX+1 would yield true from the C
-     * expression wholepart<=LONG_MAX, despite that wholepart is
-     * actually greater than LONG_MAX.  However, assuming a two's complement
-     * machine with no trap representation, LONG_MIN will be a power of 2 (and
-     * hence exactly representable as a double), and LONG_MAX = -1-LONG_MIN, so
-     * the comparisons with (double)LONG_MIN below should be safe.
+     * that).  Note that checking for >= and <= LONG_{MIN,MAX} would
+     * still be vulnerable:  if a long has more bits of precision than
+     * a double, casting MIN/MAX to double may yield an approximation,
+     * and if that's rounded up, then, e.g., wholepart=LONG_MAX+1 would
+     * yield true from the C expression wholepart<=LONG_MAX, despite
+     * that wholepart is actually greater than LONG_MAX.
      */
-    if ((double)LONG_MIN <= wholepart && wholepart < -(double)LONG_MIN) {
+    if (LONG_MIN < wholepart && wholepart < LONG_MAX) {
         const long aslong = (long)wholepart;
         return PyInt_FromLong(aslong);
     }
@@ -1086,7 +1073,6 @@ _Py_double_round(double x, int ndigits) {
     char *buf, *buf_end, shortbuf[100], *mybuf=shortbuf;
     int decpt, sign, val, halfway_case;
     PyObject *result = NULL;
-    _Py_SET_53BIT_PRECISION_HEADER;
 
     /* The basic idea is very simple: convert and round the double to a
        decimal string using _Py_dg_dtoa, then convert that decimal string
@@ -1143,9 +1129,7 @@ _Py_double_round(double x, int ndigits) {
         halfway_case = 0;
 
     /* round to a decimal string; use an extra place for halfway case */
-    _Py_SET_53BIT_PRECISION_START;
     buf = _Py_dg_dtoa(x, 3, ndigits+halfway_case, &decpt, &sign, &buf_end);
-    _Py_SET_53BIT_PRECISION_END;
     if (buf == NULL) {
         PyErr_NoMemory();
         return NULL;
@@ -1189,9 +1173,7 @@ _Py_double_round(double x, int ndigits) {
 
     /* and convert the resulting string back to a double */
     errno = 0;
-    _Py_SET_53BIT_PRECISION_START;
     rounded = _Py_dg_strtod(mybuf, NULL);
-    _Py_SET_53BIT_PRECISION_END;
     if (errno == ERANGE && fabs(rounded) >= 1.)
         PyErr_SetString(PyExc_OverflowError,
                         "rounded value too large to represent");

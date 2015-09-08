@@ -31,10 +31,9 @@ class FixItertoolsImports(fixer_base.BaseFix):
             if member_name in (u'imap', u'izip', u'ifilter'):
                 child.value = None
                 child.remove()
-            elif member_name in (u'ifilterfalse', u'izip_longest'):
+            elif member_name == u'ifilterfalse':
                 node.changed()
-                name_node.value = (u'filterfalse' if member_name[1] == u'f'
-                                   else u'zip_longest')
+                name_node.value = u'filterfalse'
 
         # Make sure the import statement is still sane
         children = imports.children[:] or [imports]

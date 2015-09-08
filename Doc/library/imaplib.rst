@@ -16,10 +16,6 @@
    pair: IMAP4_SSL; protocol
    pair: IMAP4_stream; protocol
 
-**Source code:** :source:`Lib/imaplib.py`
-
---------------
-
 This module defines three classes, :class:`IMAP4`, :class:`IMAP4_SSL` and
 :class:`IMAP4_stream`, which encapsulate a connection to an IMAP4 server and
 implement a large subset of the IMAP4rev1 client protocol as defined in
@@ -88,9 +84,9 @@ The following utility functions are defined:
 
 .. function:: Internaldate2tuple(datestr)
 
-   Parse an IMAP4 ``INTERNALDATE`` string and return corresponding local
-   time.  The return value is a :class:`time.struct_time` instance or
-   None if the string has wrong format.
+   Converts an IMAP4 INTERNALDATE string to Coordinated Universal Time. Returns a
+   :mod:`time` module tuple.
+
 
 .. function:: Int2AP(num)
 
@@ -105,13 +101,9 @@ The following utility functions are defined:
 
 .. function:: Time2Internaldate(date_time)
 
-   Convert *date_time* to an IMAP4 ``INTERNALDATE`` representation.  The
-   return value is a string in the form: ``"DD-Mmm-YYYY HH:MM:SS
-   +HHMM"`` (including double-quotes).  The *date_time* argument can be a
-   number (int or float) representing seconds since epoch (as returned
-   by :func:`time.time`), a 9-tuple representing local time (as returned by
-   :func:`time.localtime`), or a double-quoted string.  In the last case, it
-   is assumed to already be in the correct format.
+   Converts a :mod:`time` module tuple to an IMAP4 ``INTERNALDATE`` representation.
+   Returns a string in the form: ``"DD-Mmm-YYYY HH:MM:SS +HHMM"`` (including
+   double-quotes).
 
 Note that IMAP4 message numbers change as the mailbox changes; in particular,
 after an ``EXPUNGE`` command performs deletions the remaining messages are
@@ -311,10 +303,9 @@ An :class:`IMAP4` instance has the following methods:
 
 .. method:: IMAP4.open(host, port)
 
-   Opens socket to *port* at *host*.  This method is implicitly called by
-   the :class:`IMAP4` constructor.  The connection objects established by this
+   Opens socket to *port* at *host*. The connection objects established by this
    method will be used in the ``read``, ``readline``, ``send``, and ``shutdown``
-   methods.  You may override this method.
+   methods. You may override this method.
 
 
 .. method:: IMAP4.partial(message_num, message_part, start, length)
@@ -410,8 +401,7 @@ An :class:`IMAP4` instance has the following methods:
 
 .. method:: IMAP4.shutdown()
 
-   Close connection established in ``open``.  This method is implicitly
-   called by :meth:`IMAP4.logout`.  You may override this method.
+   Close connection established in ``open``. You may override this method.
 
 
 .. method:: IMAP4.socket()

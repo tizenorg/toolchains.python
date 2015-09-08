@@ -82,7 +82,7 @@ class Iterator(Iterable):
     @classmethod
     def __subclasshook__(cls, C):
         if cls is Iterator:
-            if _hasattr(C, "next") and _hasattr(C, "__iter__"):
+            if _hasattr(C, "next"):
                 return True
         return NotImplemented
 

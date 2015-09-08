@@ -1,3 +1,4 @@
+
 :mod:`uu` --- Encode and decode uuencode files
 ==============================================
 
@@ -5,9 +6,6 @@
    :synopsis: Encode and decode files in uuencode format.
 .. moduleauthor:: Lance Ellinghouse
 
-**Source code:** :source:`Lib/uu.py`
-
---------------
 
 This module encodes and decodes files in uuencode format, allowing arbitrary
 binary data to be transferred over ASCII-only connections. Wherever a file
@@ -23,6 +21,11 @@ that, when required, the mode is ``'rb'`` or ``'wb'`` on Windows.
    single: Ellinghouse, Lance
 
 This code was contributed by Lance Ellinghouse, and modified by Jack Jansen.
+
+.. seealso::
+
+   Latest version of the `uu module Python source code
+   <http://svn.python.org/view/python/branches/release27-maint/Lib/uu.py?view=markup>`_
 
 The :mod:`uu` module defines the following functions:
 
@@ -59,3 +62,4 @@ The :mod:`uu` module defines the following functions:
 
    Module :mod:`binascii`
       Support module containing ASCII-to-binary and binary-to-ASCII conversions.
+

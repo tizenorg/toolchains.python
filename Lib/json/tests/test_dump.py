@@ -1,23 +1,21 @@
+from unittest import TestCase
 from cStringIO import StringIO
-from json.tests import PyTest, CTest
 
+import json
 
-class TestDump(object):
+class TestDump(TestCase):
     def test_dump(self):
         sio = StringIO()
-        self.json.dump({}, sio)
+        json.dump({}, sio)
         self.assertEqual(sio.getvalue(), '{}')
 
     def test_dumps(self):
-        self.assertEqual(self.dumps({}), '{}')
+        self.assertEqual(json.dumps({}), '{}')
 
     def test_encode_truefalse(self):
-        self.assertEqual(self.dumps(
+        self.assertEqual(json.dumps(
                  {True: False, False: True}, sort_keys=True),
                  '{"false": true, "true": false}')
-        self.assertEqual(self.dumps(
+        self.assertEqual(json.dumps(
                 {2: 3.0, 4.0: 5L, False: 1, 6L: True}, sort_keys=True),
                 '{"false": 1, "2": 3.0, "4.0": 5, "6": true}')
-
-class TestPyDump(TestDump, PyTest): pass
-class TestCDump(TestDump, CTest): pass

@@ -1,3 +1,4 @@
+
 :mod:`fractions` --- Rational numbers
 =====================================
 
@@ -7,9 +8,6 @@
 .. sectionauthor:: Jeffrey Yasskin <jyasskin at gmail.com>
 .. versionadded:: 2.6
 
-**Source code:** :source:`Lib/fractions.py`
-
---------------
 
 The :mod:`fractions` module provides support for rational number arithmetic.
 

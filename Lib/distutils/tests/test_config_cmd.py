@@ -2,7 +2,6 @@
 import unittest
 import os
 import sys
-from test.test_support import run_unittest
 
 from distutils.command.config import dump_file, config
 from distutils.tests import support
@@ -44,10 +43,10 @@ class ConfigTestCase(support.LoggingSilencer,
         cmd = config(dist)
 
         # simple pattern searches
-        match = cmd.search_cpp(pattern='xxx', body='/* xxx */')
+        match = cmd.search_cpp(pattern='xxx', body='// xxx')
         self.assertEqual(match, 0)
 
-        match = cmd.search_cpp(pattern='_configtest', body='/* xxx */')
+        match = cmd.search_cpp(pattern='_configtest', body='// xxx')
         self.assertEqual(match, 1)
 
     def test_finalize_options(self):
@@ -87,4 +86,4 @@ def test_suite():
     return unittest.makeSuite(ConfigTestCase)
 
 if __name__ == "__main__":
-    run_unittest(test_suite())
+    unittest.main(defaultTest="test_suite")

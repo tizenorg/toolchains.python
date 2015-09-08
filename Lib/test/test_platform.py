@@ -191,7 +191,7 @@ class PlatformTest(unittest.TestCase):
             self.assertEqual(res[1], ('', '', ''))
 
             if sys.byteorder == 'little':
-                self.assertIn(res[2], ('i386', 'x86_64'))
+                self.assertEqual(res[2], 'i386')
             else:
                 self.assertEqual(res[2], 'PowerPC')
 

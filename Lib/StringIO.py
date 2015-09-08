@@ -266,7 +266,6 @@ class StringIO:
         8th bit) will cause a UnicodeError to be raised when getvalue()
         is called.
         """
-        _complain_ifclosed(self.closed)
         if self.buflist:
             self.buf += ''.join(self.buflist)
             self.buflist = []

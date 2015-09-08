@@ -1,5 +1,7 @@
-:mod:`ast` --- Abstract Syntax Trees
-====================================
+.. _ast:
+
+Abstract Syntax Trees
+=====================
 
 .. module:: ast
    :synopsis: Abstract Syntax Tree classes and manipulation.
@@ -13,9 +15,6 @@
 .. versionadded:: 2.6
    The high-level ``ast`` module containing all helpers.
 
-**Source code:** :source:`Lib/ast.py`
-
---------------
 
 The :mod:`ast` module helps Python applications to process trees of the Python
 abstract syntax grammar.  The abstract syntax itself might change with each
@@ -28,6 +27,11 @@ helper provided in this module.  The result will be a tree of objects whose
 classes all inherit from :class:`ast.AST`.  An abstract syntax tree can be
 compiled into a Python code object using the built-in :func:`compile` function.
 
+
+.. seealso::
+
+   Latest version of the `ast module Python source code
+   <http://svn.python.org/view/python/branches/release27-maint/Lib/ast.py?view=markup>`_
 
 Node classes
 ------------
@@ -123,9 +127,9 @@ The abstract grammar is currently defined as follows:
 Apart from the node classes, :mod:`ast` module defines these utility functions
 and classes for traversing abstract syntax trees:
 
-.. function:: parse(source, filename='<unknown>', mode='exec')
+.. function:: parse(expr, filename='<unknown>', mode='exec')
 
-   Parse the source into an AST node.  Equivalent to ``compile(source,
+   Parse an expression into an AST node.  Equivalent to ``compile(expr,
    filename, mode, ast.PyCF_ONLY_AST)``.
 
 
@@ -183,9 +187,9 @@ and classes for traversing abstract syntax trees:
 
 .. function:: walk(node)
 
-   Recursively yield all descendant nodes in the tree starting at *node*
-   (including *node* itself), in no specified order.  This is useful if you only
-   want to modify nodes in place and don't care about the context.
+   Recursively yield all child nodes of *node*, in no specified order.  This is
+   useful if you only want to modify nodes in place and don't care about the
+   context.
 
 
 .. class:: NodeVisitor()

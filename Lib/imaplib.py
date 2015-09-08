@@ -1158,17 +1158,28 @@ else:
             self.port = port
             self.sock = socket.create_connection((host, port))
             self.sslobj = ssl.wrap_socket(self.sock, self.keyfile, self.certfile)
-            self.file = self.sslobj.makefile('rb')
 
 
         def read(self, size):
             """Read 'size' bytes from remote."""
-            return self.file.read(size)
+            # sslobj.read() sometimes returns < size bytes
+            chunks = []
+            read = 0
+            while read < size:
+                data = self.sslobj.read(min(size-read, 16384))
+                read += len(data)
+                chunks.append(data)
+
+            return ''.join(chunks)
 
 
         def readline(self):
             """Read line from remote."""
-            return self.file.readline()
+            line = []
+            while 1:
+                char = self.sslobj.read(1)
+                line.append(char)
+                if char in ("\n", ""): return ''.join(line)
 
 
         def send(self, data):
@@ -1184,7 +1195,6 @@ else:
 
         def shutdown(self):
             """Close I/O established in "open"."""
-            self.file.close()
             self.sock.close()
 
 
@@ -1311,10 +1321,9 @@ Mon2num = {'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun': 6,
         'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12}
 
 def Internaldate2tuple(resp):
-    """Parse an IMAP4 INTERNALDATE string.
+    """Convert IMAP4 INTERNALDATE to UT.
 
-    Return corresponding local time.  The return value is a
-    time.struct_time instance or None if the string has wrong format.
+    Returns Python time module tuple.
     """
 
     mo = InternalDate.match(resp)
@@ -1381,14 +1390,9 @@ def ParseFlags(resp):
 
 def Time2Internaldate(date_time):
 
-    """Convert date_time to IMAP4 INTERNALDATE representation.
+    """Convert 'date_time' to IMAP4 INTERNALDATE representation.
 
-    Return string in form: '"DD-Mmm-YYYY HH:MM:SS +HHMM"'.  The
-    date_time argument can be a number (int or float) representing
-    seconds since epoch (as returned by time.time()), a 9-tuple
-    representing local time (as returned by time.localtime()), or a
-    double-quoted string.  In the last case, it is assumed to already
-    be in the correct format.
+    Return string in form: '"DD-Mmm-YYYY HH:MM:SS +HHMM"'
     """
 
     if isinstance(date_time, (int, float)):

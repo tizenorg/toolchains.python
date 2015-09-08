@@ -330,14 +330,15 @@ class SimSMTPChannel(smtpd.SMTPChannel):
         self.push(resp)
 
     def smtp_VRFY(self, arg):
-        # For max compatibility smtplib should be sending the raw address.
-        if arg in sim_users:
-            self.push('250 %s %s' % (sim_users[arg], smtplib.quoteaddr(arg)))
+        raw_addr = email.utils.parseaddr(arg)[1]
+        quoted_addr = smtplib.quoteaddr(arg)
+        if raw_addr in sim_users:
+            self.push('250 %s %s' % (sim_users[raw_addr], quoted_addr))
         else:
             self.push('550 No such user: %s' % arg)
 
     def smtp_EXPN(self, arg):
-        list_name = arg.lower()
+        list_name = email.utils.parseaddr(arg)[1].lower()
         if list_name in sim_lists:
             user_list = sim_lists[list_name]
             for n, user_email in enumerate(user_list):
@@ -453,7 +454,7 @@ class SMTPSimTests(unittest.TestCase):
             self.assertEqual(smtp.vrfy(email), expected_known)
 
         u = 'nobody@nowhere.com'
-        expected_unknown = (550, 'No such user: %s' % u)
+        expected_unknown = (550, 'No such user: %s' % smtplib.quoteaddr(u))
         self.assertEqual(smtp.vrfy(u), expected_unknown)
         smtp.quit()
 

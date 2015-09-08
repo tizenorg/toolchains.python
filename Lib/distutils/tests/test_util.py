@@ -1,7 +1,6 @@
 """Tests for distutils.util."""
 import sys
 import unittest
-from test.test_support import run_unittest
 
 from distutils.errors import DistutilsPlatformError, DistutilsByteCompileError
 from distutils.util import byte_compile
@@ -22,4 +21,4 @@ def test_suite():
     return unittest.makeSuite(UtilTestCase)
 
 if __name__ == "__main__":
-    run_unittest(test_suite())
+    unittest.main(defaultTest="test_suite")

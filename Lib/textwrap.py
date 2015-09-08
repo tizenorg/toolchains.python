@@ -5,7 +5,7 @@
 # Copyright (C) 2002, 2003 Python Software Foundation.
 # Written by Greg Ward <gward@python.net>
 
-__revision__ = "$Id$"
+__revision__ = "$Id: textwrap.py 74912 2009-09-18 16:19:56Z georg.brandl $"
 
 import string, re
 

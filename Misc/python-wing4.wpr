@@ -5,8 +5,7 @@
 ##################################################################
 [project attributes]
 proj.directory-list = [{'dirloc': loc('..'),
-                        'excludes': [u'.hg',
-                                     u'Lib/__pycache__',
+                        'excludes': [u'Lib/__pycache__',
                                      u'Doc/build',
                                      u'build'],
                         'filter': '*',

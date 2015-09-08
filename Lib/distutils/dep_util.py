@@ -4,10 +4,9 @@ Utility functions for simple, timestamp-based dependency of files
 and groups of files; also, function based entirely on such
 timestamp dependency analysis."""
 
-__revision__ = "$Id$"
+__revision__ = "$Id: dep_util.py 76746 2009-12-10 15:29:03Z tarek.ziade $"
 
 import os
-from stat import ST_MTIME
 from distutils.errors import DistutilsFileError
 
 def newer(source, target):
@@ -28,7 +27,7 @@ def newer(source, target):
     if not os.path.exists(target):
         return True
 
-    return os.stat(source)[ST_MTIME] > os.stat(target)[ST_MTIME]
+    return os.stat(source).st_mtime > os.stat(target).st_mtime
 
 def newer_pairwise(sources, targets):
     """Walk two filename lists in parallel, testing if each source is newer
@@ -72,7 +71,7 @@ def newer_group(sources, target, missing='error'):
     # is more recent than 'target', then 'target' is out-of-date and
     # we can immediately return true.  If we fall through to the end
     # of the loop, then 'target' is up-to-date and we return false.
-    target_mtime = os.stat(target)[ST_MTIME]
+    target_mtime = os.stat(target).st_mtime
 
     for source in sources:
         if not os.path.exists(source):
@@ -83,7 +82,7 @@ def newer_group(sources, target, missing='error'):
             elif missing == 'newer':    # missing source means target is
                 return True             #  out-of-date
 
-        if os.stat(source)[ST_MTIME] > target_mtime:
+        if os.stat(source).st_mtime > target_mtime:
             return True
 
     return False

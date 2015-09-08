@@ -28,12 +28,10 @@ Verbosity
 -W/--verbose3   -- re-run failed tests in verbose mode immediately
 -q/--quiet      -- no output unless one or more tests fail
 -S/--slow       -- print the slowest 10 tests
-   --header     -- print header with interpreter info
 
 Selecting tests
 
 -r/--random     -- randomize test execution order (see below)
-   --randseed   -- pass a random seed to reproduce a previous random run
 -f/--fromfile   -- read names of tests to run from a file (see below)
 -x/--exclude    -- arguments are tests to *exclude*
 -s/--single     -- single step through a set of tests (see below)
@@ -229,8 +227,7 @@ def main(tests=None, testdir=None, verbose=0, quiet=False,
          exclude=False, single=False, randomize=False, fromfile=None,
          findleaks=False, use_resources=None, trace=False, coverdir='coverage',
          runleaks=False, huntrleaks=False, verbose2=False, print_slow=False,
-         random_seed=None, use_mp=None, verbose3=False, forever=False,
-         header=False):
+         random_seed=None, use_mp=None, verbose3=False, forever=False):
     """Execute a test suite.
 
     This also parses command-line options and modifies its behavior
@@ -261,7 +258,7 @@ def main(tests=None, testdir=None, verbose=0, quiet=False,
              'exclude', 'single', 'slow', 'random', 'fromfile', 'findleaks',
              'use=', 'threshold=', 'trace', 'coverdir=', 'nocoverdir',
              'runleaks', 'huntrleaks=', 'memlimit=', 'randseed=',
-             'multiprocess=', 'slaveargs=', 'forever', 'header'])
+             'multiprocess=', 'slaveargs=', 'forever'])
     except getopt.error, msg:
         usage(2, msg)
 
@@ -345,8 +342,6 @@ def main(tests=None, testdir=None, verbose=0, quiet=False,
             forever = True
         elif o in ('-j', '--multiprocess'):
             use_mp = int(a)
-        elif o == '--header':
-            header = True
         elif o == '--slaveargs':
             args, kwargs = json.loads(a)
             try:
@@ -420,14 +415,13 @@ def main(tests=None, testdir=None, verbose=0, quiet=False,
         args = []
 
     # For a partial run, we do not need to clutter the output.
-    if verbose or header or not (quiet or single or tests or args):
+    if verbose or not (quiet or single or tests or args):
         # Print basic platform information
         print "==", platform.python_implementation(), \
                     " ".join(sys.version.split())
         print "==  ", platform.platform(aliased=True), \
                       "%s-endian" % sys.byteorder
         print "==  ", os.getcwd()
-        print "Testing with flags:", sys.flags
 
     alltests = findtests(testdir, stdtests, nottests)
     selected = tests or args or alltests
@@ -490,7 +484,7 @@ def main(tests=None, testdir=None, verbose=0, quiet=False,
         def tests_and_args():
             for test in tests:
                 args_tuple = (
-                    (test, verbose, quiet),
+                    (test, verbose, quiet, testdir),
                     dict(huntrleaks=huntrleaks, use_resources=use_resources)
                 )
                 yield (test, args_tuple)
@@ -557,15 +551,16 @@ def main(tests=None, testdir=None, verbose=0, quiet=False,
             if trace:
                 # If we're tracing code coverage, then we don't exit with status
                 # if on a false return value from main.
-                tracer.runctx('runtest(test, verbose, quiet)',
+                tracer.runctx('runtest(test, verbose, quiet, testdir)',
                               globals=globals(), locals=vars())
             else:
                 try:
-                    result = runtest(test, verbose, quiet, huntrleaks)
+                    result = runtest(test, verbose, quiet,
+                                     testdir, huntrleaks)
                     accumulate_result(test, result)
                     if verbose3 and result[0] == FAILED:
                         print "Re-running test %r in verbose mode" % test
-                        runtest(test, True, quiet, huntrleaks)
+                        runtest(test, True, quiet, testdir, huntrleaks)
                 except KeyboardInterrupt:
                     interrupted = True
                     break
@@ -635,7 +630,8 @@ def main(tests=None, testdir=None, verbose=0, quiet=False,
             sys.stdout.flush()
             try:
                 test_support.verbose = True
-                ok = runtest(test, True, quiet, huntrleaks)
+                ok = runtest(test, True, quiet, testdir,
+                             huntrleaks)
             except KeyboardInterrupt:
                 # print a newline separate from the ^C
                 print
@@ -691,13 +687,14 @@ def findtests(testdir=None, stdtests=STDTESTS, nottests=NOTTESTS):
     return stdtests + sorted(tests)
 
 def runtest(test, verbose, quiet,
-            huntrleaks=False, use_resources=None):
+            testdir=None, huntrleaks=False, use_resources=None):
     """Run a single test.
 
     test -- the name of the test
     verbose -- if true, print more messages
     quiet -- if true, don't print 'skipped' messages (probably redundant)
     test_times -- a list of (time, test_name) pairs
+    testdir -- test directory
     huntrleaks -- run multiple times to test for leaks; requires a debug
                   build; a triple corresponding to -R's three arguments
     Returns one of the test result constants:
@@ -713,7 +710,8 @@ def runtest(test, verbose, quiet,
     if use_resources is not None:
         test_support.use_resources = use_resources
     try:
-        return runtest_inner(test, verbose, quiet, huntrleaks)
+        return runtest_inner(test, verbose, quiet,
+                             testdir, huntrleaks)
     finally:
         cleanup_test_droppings(test, verbose)
 
@@ -846,8 +844,10 @@ class saved_test_environment:
         return False
 
 
-def runtest_inner(test, verbose, quiet, huntrleaks=False):
+def runtest_inner(test, verbose, quiet,
+                  testdir=None, huntrleaks=False):
     test_support.unload(test)
+    testdir = findtestdir(testdir)
     if verbose:
         capture_stdout = None
     else:
@@ -894,16 +894,16 @@ def runtest_inner(test, verbose, quiet, huntrleaks=False):
     except KeyboardInterrupt:
         raise
     except test_support.TestFailed, msg:
-        print >>sys.stderr, "test", test, "failed --", msg
-        sys.stderr.flush()
+        print "test", test, "failed --", msg
+        sys.stdout.flush()
         return FAILED, test_time
     except:
         type, value = sys.exc_info()[:2]
-        print >>sys.stderr, "test", test, "crashed --", str(type) + ":", value
-        sys.stderr.flush()
+        print "test", test, "crashed --", str(type) + ":", value
+        sys.stdout.flush()
         if verbose:
-            traceback.print_exc(file=sys.stderr)
-            sys.stderr.flush()
+            traceback.print_exc(file=sys.stdout)
+            sys.stdout.flush()
         return FAILED, test_time
     else:
         if refleak:
@@ -1076,13 +1076,6 @@ def dash_R_cleanup(fs, ps, pic, zdc, abcs):
     filecmp._cache.clear()
     struct._clearcache()
     doctest.master = None
-    try:
-        import ctypes
-    except ImportError:
-        # Don't worry about resetting the cache if ctypes is not supported
-        pass
-    else:
-        ctypes._reset_cache()
 
     # Collect cyclic trash.
     gc.collect()
@@ -1477,7 +1470,7 @@ class _ExpectedSkips:
                 # is distributed with Python
                 WIN_ONLY = ["test_unicode_file", "test_winreg",
                             "test_winsound", "test_startfile",
-                            "test_sqlite", "test_msilib"]
+                            "test_sqlite"]
                 for skip in WIN_ONLY:
                     self.expected.add(skip)
 

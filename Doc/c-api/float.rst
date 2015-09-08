@@ -8,64 +8,62 @@ Floating Point Objects
 .. index:: object: floating point
 
 
-.. c:type:: PyFloatObject
+.. ctype:: PyFloatObject
 
-   This subtype of :c:type:`PyObject` represents a Python floating point object.
+   This subtype of :ctype:`PyObject` represents a Python floating point object.
 
 
-.. c:var:: PyTypeObject PyFloat_Type
+.. cvar:: PyTypeObject PyFloat_Type
 
    .. index:: single: FloatType (in modules types)
 
-   This instance of :c:type:`PyTypeObject` represents the Python floating point
+   This instance of :ctype:`PyTypeObject` represents the Python floating point
    type.  This is the same object as ``float`` and ``types.FloatType``.
 
 
-.. c:function:: int PyFloat_Check(PyObject *p)
+.. cfunction:: int PyFloat_Check(PyObject *p)
 
-   Return true if its argument is a :c:type:`PyFloatObject` or a subtype of
-   :c:type:`PyFloatObject`.
+   Return true if its argument is a :ctype:`PyFloatObject` or a subtype of
+   :ctype:`PyFloatObject`.
 
    .. versionchanged:: 2.2
       Allowed subtypes to be accepted.
 
 
-.. c:function:: int PyFloat_CheckExact(PyObject *p)
+.. cfunction:: int PyFloat_CheckExact(PyObject *p)
 
-   Return true if its argument is a :c:type:`PyFloatObject`, but not a subtype of
-   :c:type:`PyFloatObject`.
+   Return true if its argument is a :ctype:`PyFloatObject`, but not a subtype of
+   :ctype:`PyFloatObject`.
 
    .. versionadded:: 2.2
 
 
-.. c:function:: PyObject* PyFloat_FromString(PyObject *str, char **pend)
+.. cfunction:: PyObject* PyFloat_FromString(PyObject *str, char **pend)
 
-   Create a :c:type:`PyFloatObject` object based on the string value in *str*, or
+   Create a :ctype:`PyFloatObject` object based on the string value in *str*, or
    *NULL* on failure.  The *pend* argument is ignored.  It remains only for
    backward compatibility.
 
 
-.. c:function:: PyObject* PyFloat_FromDouble(double v)
+.. cfunction:: PyObject* PyFloat_FromDouble(double v)
 
-   Create a :c:type:`PyFloatObject` object from *v*, or *NULL* on failure.
+   Create a :ctype:`PyFloatObject` object from *v*, or *NULL* on failure.
 
 
-.. c:function:: double PyFloat_AsDouble(PyObject *pyfloat)
+.. cfunction:: double PyFloat_AsDouble(PyObject *pyfloat)
 
-   Return a C :c:type:`double` representation of the contents of *pyfloat*.  If
+   Return a C :ctype:`double` representation of the contents of *pyfloat*.  If
    *pyfloat* is not a Python floating point object but has a :meth:`__float__`
    method, this method will first be called to convert *pyfloat* into a float.
-   This method returns ``-1.0`` upon failure, so one should call
-   :c:func:`PyErr_Occurred` to check for errors.
 
 
-.. c:function:: double PyFloat_AS_DOUBLE(PyObject *pyfloat)
+.. cfunction:: double PyFloat_AS_DOUBLE(PyObject *pyfloat)
 
-   Return a C :c:type:`double` representation of the contents of *pyfloat*, but
+   Return a C :ctype:`double` representation of the contents of *pyfloat*, but
    without error checking.
 
 
-.. c:function:: PyObject* PyFloat_GetInfo(void)
+.. cfunction:: PyObject* PyFloat_GetInfo(void)
 
    Return a structseq instance which contains information about the
    precision, minimum and maximum values of a float. It's a thin wrapper
@@ -74,21 +72,21 @@ Floating Point Objects
    .. versionadded:: 2.6
 
 
-.. c:function:: double PyFloat_GetMax()
+.. cfunction:: double PyFloat_GetMax()
 
-   Return the maximum representable finite float *DBL_MAX* as C :c:type:`double`.
-
-   .. versionadded:: 2.6
-
-
-.. c:function:: double PyFloat_GetMin()
-
-   Return the minimum normalized positive float *DBL_MIN* as C :c:type:`double`.
+   Return the maximum representable finite float *DBL_MAX* as C :ctype:`double`.
 
    .. versionadded:: 2.6
 
 
-.. c:function:: int PyFloat_ClearFreeList()
+.. cfunction:: double PyFloat_GetMin()
+
+   Return the minimum normalized positive float *DBL_MIN* as C :ctype:`double`.
+
+   .. versionadded:: 2.6
+
+
+.. cfunction:: int PyFloat_ClearFreeList()
 
    Clear the float free list. Return the number of items that could not
    be freed.
@@ -96,7 +94,7 @@ Floating Point Objects
    .. versionadded:: 2.6
 
 
-.. c:function:: void PyFloat_AsString(char *buf, PyFloatObject *v)
+.. cfunction:: void PyFloat_AsString(char *buf, PyFloatObject *v)
 
    Convert the argument *v* to a string, using the same rules as
    :func:`str`. The length of *buf* should be at least 100.
@@ -108,7 +106,7 @@ Floating Point Objects
       Use :func:`PyObject_Str` or :func:`PyOS_double_to_string` instead.
 
 
-.. c:function:: void PyFloat_AsReprString(char *buf, PyFloatObject *v)
+.. cfunction:: void PyFloat_AsReprString(char *buf, PyFloatObject *v)
 
    Same as PyFloat_AsString, except uses the same rules as
    :func:`repr`.  The length of *buf* should be at least 100.

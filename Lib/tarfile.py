@@ -35,8 +35,8 @@ __version__ = "$Revision: 85213 $"
 
 version     = "0.9.0"
 __author__  = "Lars Gustäbel (lars@gustaebel.de)"
-__date__    = "$Date$"
-__cvsid__   = "$Id$"
+__date__    = "$Date: 2010-10-04 10:37:53 -0500 (Mon, 04 Oct 2010) $"
+__cvsid__   = "$Id: tarfile.py 85213 2010-10-04 15:37:53Z lars.gustaebel $"
 __credits__ = "Gustavo Niemeyer, Niels Gustäbel, Richard Townsend."
 
 #---------
@@ -454,8 +454,6 @@ class _Stream:
                                             0)
         timestamp = struct.pack("<L", long(time.time()))
         self.__write("\037\213\010\010%s\002\377" % timestamp)
-        if type(self.name) is unicode:
-            self.name = self.name.encode("iso-8859-1", "replace")
         if self.name.endswith(".gz"):
             self.name = self.name[:-3]
         self.__write(self.name + NUL)
@@ -629,7 +627,7 @@ class _StreamProxy(object):
     def getcomptype(self):
         if self.buf.startswith("\037\213\010"):
             return "gz"
-        if self.buf[0:3] == "BZh" and self.buf[4:10] == "1AY&SY":
+        if self.buf.startswith("BZh91"):
             return "bz2"
         return "tar"
 
@@ -2241,14 +2239,10 @@ class TarFile(object):
         if hasattr(os, "symlink") and hasattr(os, "link"):
             # For systems that support symbolic and hard links.
             if tarinfo.issym():
-                if os.path.lexists(targetpath):
-                    os.unlink(targetpath)
                 os.symlink(tarinfo.linkname, targetpath)
             else:
                 # See extract().
                 if os.path.exists(tarinfo._link_target):
-                    if os.path.lexists(targetpath):
-                        os.unlink(targetpath)
                     os.link(tarinfo._link_target, targetpath)
                 else:
                     self._extract_member(self._find_link_target(tarinfo), targetpath)
@@ -2266,11 +2260,17 @@ class TarFile(object):
             try:
                 g = grp.getgrnam(tarinfo.gname)[2]
             except KeyError:
-                g = tarinfo.gid
+                try:
+                    g = grp.getgrgid(tarinfo.gid)[2]
+                except KeyError:
+                    g = os.getgid()
             try:
                 u = pwd.getpwnam(tarinfo.uname)[2]
             except KeyError:
-                u = tarinfo.uid
+                try:
+                    u = pwd.getpwuid(tarinfo.uid)[2]
+                except KeyError:
+                    u = os.getuid()
             try:
                 if tarinfo.issym() and hasattr(os, "lchown"):
                     os.lchown(targetpath, u, g)

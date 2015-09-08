@@ -9,7 +9,7 @@ class TextViewer(Toplevel):
     """A simple text viewer dialog for IDLE
 
     """
-    def __init__(self, parent, title, text, modal=True):
+    def __init__(self, parent, title, text):
         """Show the given text in a scrollable window with a 'close' button
 
         """
@@ -24,6 +24,8 @@ class TextViewer(Toplevel):
 
         self.CreateWidgets()
         self.title(title)
+        self.transient(parent)
+        self.grab_set()
         self.protocol("WM_DELETE_WINDOW", self.Ok)
         self.parent = parent
         self.textView.focus_set()
@@ -32,11 +34,7 @@ class TextViewer(Toplevel):
         self.bind('<Escape>',self.Ok) #dismiss dialog
         self.textView.insert(0.0, text)
         self.textView.config(state=DISABLED)
-
-        if modal:
-            self.transient(parent)
-            self.grab_set()
-            self.wait_window()
+        self.wait_window()
 
     def CreateWidgets(self):
         frameText = Frame(self, relief=SUNKEN, height=700)
@@ -59,10 +57,10 @@ class TextViewer(Toplevel):
         self.destroy()
 
 
-def view_text(parent, title, text, modal=True):
-    return TextViewer(parent, title, text, modal)
+def view_text(parent, title, text):
+    TextViewer(parent, title, text)
 
-def view_file(parent, title, filename, encoding=None, modal=True):
+def view_file(parent, title, filename, encoding=None):
     try:
         if encoding:
             import codecs
@@ -75,7 +73,7 @@ def view_file(parent, title, filename, encoding=None, modal=True):
                                message='Unable to load file %r .' % filename,
                                parent=parent)
     else:
-        return view_text(parent, title, textFile.read(), modal)
+        return view_text(parent, title, textFile.read())
 
 
 if __name__ == '__main__':
@@ -85,15 +83,11 @@ if __name__ == '__main__':
     filename = './textView.py'
     text = file(filename, 'r').read()
     btn1 = Button(root, text='view_text',
-                  command=lambda:view_text(root, 'view_text', text))
+                 command=lambda:view_text(root, 'view_text', text))
     btn1.pack(side=LEFT)
     btn2 = Button(root, text='view_file',
                   command=lambda:view_file(root, 'view_file', filename))
     btn2.pack(side=LEFT)
-    btn3 = Button(root, text='nonmodal view_text',
-                  command=lambda:view_text(root, 'nonmodal view_text', text,
-                                           modal=False))
-    btn3.pack(side=LEFT)
     close = Button(root, text='Close', command=root.destroy)
     close.pack(side=RIGHT)
     root.mainloop()

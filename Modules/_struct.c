@@ -1162,7 +1162,7 @@ whichtable(char **pfmt)
     case '>':
     case '!': /* Network byte order is big-endian */
         return bigendian_table;
-    case '=': { /* Host byte order -- different from native in alignment! */
+    case '=': { /* Host byte order -- different from native in aligment! */
         int n = 1;
         char *p = (char *) &n;
         if (*p == 1)

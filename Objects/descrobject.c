@@ -224,8 +224,7 @@ methoddescr_call(PyMethodDescrObject *descr, PyObject *args, PyObject *kwds)
         return NULL;
     }
     self = PyTuple_GET_ITEM(args, 0);
-    if (!_PyObject_RealIsSubclass((PyObject *)Py_TYPE(self),
-                                  (PyObject *)(descr->d_type))) {
+    if (!PyObject_IsInstance(self, (PyObject *)(descr->d_type))) {
         PyErr_Format(PyExc_TypeError,
                      "descriptor '%.200s' "
                      "requires a '%.100s' object "
@@ -283,8 +282,7 @@ wrapperdescr_call(PyWrapperDescrObject *descr, PyObject *args, PyObject *kwds)
         return NULL;
     }
     self = PyTuple_GET_ITEM(args, 0);
-    if (!_PyObject_RealIsSubclass((PyObject *)Py_TYPE(self),
-                                  (PyObject *)(descr->d_type))) {
+    if (!PyObject_IsInstance(self, (PyObject *)(descr->d_type))) {
         PyErr_Format(PyExc_TypeError,
                      "descriptor '%.200s' "
                      "requires a '%.100s' object "
@@ -801,20 +799,6 @@ proxy_str(proxyobject *pp)
     return PyObject_Str(pp->dict);
 }
 
-static PyObject *
-proxy_repr(proxyobject *pp)
-{
-    PyObject *dictrepr;
-    PyObject *result;
-
-    dictrepr = PyObject_Repr(pp->dict);
-    if (dictrepr == NULL)
-        return NULL;
-    result = PyString_FromFormat("dict_proxy(%s)", PyString_AS_STRING(dictrepr));
-    Py_DECREF(dictrepr);
-    return result;
-}
-
 static int
 proxy_traverse(PyObject *self, visitproc visit, void *arg)
 {
@@ -846,7 +830,7 @@ PyTypeObject PyDictProxy_Type = {
     0,                                          /* tp_getattr */
     0,                                          /* tp_setattr */
     (cmpfunc)proxy_compare,                     /* tp_compare */
-    (reprfunc)proxy_repr,                       /* tp_repr */
+    0,                                          /* tp_repr */
     0,                                          /* tp_as_number */
     &proxy_as_sequence,                         /* tp_as_sequence */
     &proxy_as_mapping,                          /* tp_as_mapping */
@@ -1062,8 +1046,7 @@ PyWrapper_New(PyObject *d, PyObject *self)
 
     assert(PyObject_TypeCheck(d, &PyWrapperDescr_Type));
     descr = (PyWrapperDescrObject *)d;
-    assert(_PyObject_RealIsSubclass((PyObject *)Py_TYPE(self),
-                                    (PyObject *)(descr->d_type)));
+    assert(PyObject_IsInstance(self, (PyObject *)(descr->d_type)));
 
     wp = PyObject_GC_New(wrapperobject, &wrappertype);
     if (wp != NULL) {

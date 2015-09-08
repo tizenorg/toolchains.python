@@ -1,3 +1,4 @@
+
 :mod:`telnetlib` --- Telnet client
 ==================================
 
@@ -7,10 +8,6 @@
 
 
 .. index:: single: protocol; Telnet
-
-**Source code:** :source:`Lib/telnetlib.py`
-
---------------
 
 The :mod:`telnetlib` module provides a :class:`Telnet` class that implements the
 Telnet protocol.  See :rfc:`854` for details about the protocol. In addition, it

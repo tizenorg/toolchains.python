@@ -7,7 +7,6 @@ from distutils.command.install_lib import install_lib
 from distutils.extension import Extension
 from distutils.tests import support
 from distutils.errors import DistutilsOptionError
-from test.test_support import run_unittest
 
 class InstallLibTestCase(support.TempdirManager,
                          support.LoggingSilencer,
@@ -104,4 +103,4 @@ def test_suite():
     return unittest.makeSuite(InstallLibTestCase)
 
 if __name__ == "__main__":
-    run_unittest(test_suite())
+    unittest.main(defaultTest="test_suite")

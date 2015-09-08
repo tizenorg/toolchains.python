@@ -63,9 +63,6 @@ add_module_names = True
 # Options for HTML output
 # -----------------------
 
-html_theme = 'default'
-html_theme_options = {'collapsiblesidebar': True}
-
 # If not '', a 'Last updated on:' timestamp is inserted at every page bottom,
 # using the given strftime format.
 html_last_updated_fmt = '%b %d, %Y'
@@ -86,7 +83,7 @@ html_additional_pages = {
 }
 
 # Output an OpenSearch description file.
-html_use_opensearch = 'http://docs.python.org/'
+html_use_opensearch = 'http://docs.python.org/dev'
 
 # Additional static files.
 html_static_path = ['tools/sphinxext/static']
@@ -115,6 +112,8 @@ latex_documents = [
      'The Python/C API', _stdauthor, 'manual'),
     ('distutils/index', 'distutils.tex',
      'Distributing Python Modules', _stdauthor, 'manual'),
+    ('documenting/index', 'documenting.tex',
+     'Documenting Python', 'Georg Brandl', 'manual'),
     ('extending/index', 'extending.tex',
      'Extending and Embedding Python', _stdauthor, 'manual'),
     ('install/index', 'install.tex',
@@ -152,7 +151,7 @@ latex_preamble = r'''
 latex_appendices = ['glossary', 'about', 'license', 'copyright']
 
 # Get LaTeX to handle Unicode correctly
-latex_elements = {'inputenc': r'\usepackage[utf8x]{inputenc}', 'utf8extra': ''}
+latex_elements = {'inputenc': r'\usepackage[utf8x]{inputenc}'}
 
 # Options for the coverage checker
 # --------------------------------

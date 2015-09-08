@@ -2,7 +2,6 @@
 import unittest
 from distutils.version import LooseVersion
 from distutils.version import StrictVersion
-from test.test_support import run_unittest
 
 class VersionTestCase(unittest.TestCase):
 
@@ -68,4 +67,4 @@ def test_suite():
     return unittest.makeSuite(VersionTestCase)
 
 if __name__ == "__main__":
-    run_unittest(test_suite())
+    unittest.main(defaultTest="test_suite")

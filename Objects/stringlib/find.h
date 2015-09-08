@@ -93,33 +93,32 @@ stringlib_contains_obj(PyObject* str, PyObject* sub)
 
 #endif /* STRINGLIB_WANT_CONTAINS_OBJ */
 
+#if STRINGLIB_IS_UNICODE
+
 /*
 This function is a helper for the "find" family (find, rfind, index,
-rindex) and for count, startswith and endswith, because they all have
-the same behaviour for the arguments.
+rindex) of unicodeobject.c file, because they all have the same 
+behaviour for the arguments.
 
 It does not touch the variables received until it knows everything 
 is ok.
+
+Note that we receive a pointer to the pointer of the substring object,
+so when we create that object in this function we don't DECREF it,
+because it continues living in the caller functions (those functions, 
+after finishing using the substring, must DECREF it).
 */
 
-#define FORMAT_BUFFER_SIZE 50
-
 Py_LOCAL_INLINE(int)
-stringlib_parse_args_finds(const char * function_name, PyObject *args,
-                           PyObject **subobj,
-                           Py_ssize_t *start, Py_ssize_t *end)
-{
-    PyObject *tmp_subobj;
+_ParseTupleFinds (PyObject *args, PyObject **substring, 
+                  Py_ssize_t *start, Py_ssize_t *end) {
+    PyObject *tmp_substring;
     Py_ssize_t tmp_start = 0;
     Py_ssize_t tmp_end = PY_SSIZE_T_MAX;
     PyObject *obj_start=Py_None, *obj_end=Py_None;
-    char format[FORMAT_BUFFER_SIZE] = "O|OO:";
-    size_t len = strlen(format);
 
-    strncpy(format + len, function_name, FORMAT_BUFFER_SIZE - len - 1);
-    format[FORMAT_BUFFER_SIZE - 1] = '\0';
-
-    if (!PyArg_ParseTuple(args, format, &tmp_subobj, &obj_start, &obj_end))
+    if (!PyArg_ParseTuple(args, "O|OO:find", &tmp_substring,
+         &obj_start, &obj_end))
         return 0;
 
     /* To support None in "start" and "end" arguments, meaning
@@ -132,42 +131,14 @@ stringlib_parse_args_finds(const char * function_name, PyObject *args,
         if (!_PyEval_SliceIndex(obj_end, &tmp_end))
             return 0;
 
+    tmp_substring = PyUnicode_FromObject(tmp_substring);
+    if (!tmp_substring)
+        return 0;
+
     *start = tmp_start;
     *end = tmp_end;
-    *subobj = tmp_subobj;
+    *substring = tmp_substring;
     return 1;
-}
-
-#undef FORMAT_BUFFER_SIZE
-
-#if STRINGLIB_IS_UNICODE
-
-/*
-Wraps stringlib_parse_args_finds() and additionally ensures that the
-first argument is a unicode object.
-
-Note that we receive a pointer to the pointer of the substring object,
-so when we create that object in this function we don't DECREF it,
-because it continues living in the caller functions (those functions, 
-after finishing using the substring, must DECREF it).
-*/
-
-Py_LOCAL_INLINE(int)
-stringlib_parse_args_finds_unicode(const char * function_name, PyObject *args,
-                                   PyUnicodeObject **substring,
-                                   Py_ssize_t *start, Py_ssize_t *end)
-{
-    PyObject *tmp_substring;
-
-    if(stringlib_parse_args_finds(function_name, args, &tmp_substring,
-                                  start, end)) {
-        tmp_substring = PyUnicode_FromObject(tmp_substring);
-        if (!tmp_substring)
-            return 0;
-        *substring = (PyUnicodeObject *)tmp_substring;
-        return 1;
-    }
-    return 0;
 }
 
 #endif /* STRINGLIB_IS_UNICODE */

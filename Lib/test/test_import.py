@@ -1,4 +1,3 @@
-import errno
 import imp
 import marshal
 import os
@@ -9,8 +8,7 @@ import sys
 import unittest
 from test.test_support import (unlink, TESTFN, unload, run_unittest, rmtree,
                                is_jython, check_warnings, EnvironmentVarGuard)
-import textwrap
-from test import script_helper
+
 
 def remove_files(name):
     for f in (name + os.extsep + "py",
@@ -254,53 +252,6 @@ class ImportTests(unittest.TestCase):
             __import__(path)
         self.assertEqual("Import by filename is not supported.",
                          c.exception.args[0])
-
-    def test_import_in_del_does_not_crash(self):
-        # Issue 4236
-        testfn = script_helper.make_script('', TESTFN, textwrap.dedent("""\
-            import sys
-            class C:
-               def __del__(self):
-                  import imp
-            sys.argv.insert(0, C())
-            """))
-        try:
-            script_helper.assert_python_ok(testfn)
-        finally:
-            unlink(testfn)
-
-    def test_bug7732(self):
-        source = TESTFN + '.py'
-        os.mkdir(source)
-        try:
-            self.assertRaises((ImportError, IOError),
-                              imp.find_module, TESTFN, ["."])
-        finally:
-            os.rmdir(source)
-
-    def test_timestamp_overflow(self):
-        # A modification timestamp larger than 2**32 should not be a problem
-        # when importing a module (issue #11235).
-        sys.path.insert(0, os.curdir)
-        try:
-            source = TESTFN + ".py"
-            compiled = source + ('c' if __debug__ else 'o')
-            with open(source, 'w') as f:
-                pass
-            try:
-                os.utime(source, (2 ** 33 - 5, 2 ** 33 - 5))
-            except OverflowError:
-                self.skipTest("cannot set modification time to large integer")
-            except OSError as e:
-                if e.errno != getattr(errno, 'EOVERFLOW', None):
-                    raise
-                self.skipTest("cannot set modification time to large integer ({})".format(e))
-            __import__(TESTFN)
-            # The pyc file was created.
-            os.stat(compiled)
-        finally:
-            del sys.path[0]
-            remove_files(TESTFN)
 
 
 class PycRewritingTests(unittest.TestCase):

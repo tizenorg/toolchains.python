@@ -1628,16 +1628,20 @@ PyObject *PyUnicode_DecodeUTF7Stateful(const char *s,
                             *p++ = outCh;
 #endif
                             surrogate = 0;
-                            continue;
                         }
                         else {
-                            *p++ = surrogate;
                             surrogate = 0;
+                            errmsg = "second surrogate missing";
+                            goto utf7Error;
                         }
                     }
-                    if (outCh >= 0xD800 && outCh <= 0xDBFF) {
+                    else if (outCh >= 0xD800 && outCh <= 0xDBFF) {
                         /* first surrogate */
                         surrogate = outCh;
+                    }
+                    else if (outCh >= 0xDC00 && outCh <= 0xDFFF) {
+                        errmsg = "unexpected second surrogate";
+                        goto utf7Error;
                     }
                     else {
                         *p++ = outCh;
@@ -1648,8 +1652,8 @@ PyObject *PyUnicode_DecodeUTF7Stateful(const char *s,
                 inShift = 0;
                 s++;
                 if (surrogate) {
-                    *p++ = surrogate;
-                    surrogate = 0;
+                    errmsg = "second surrogate missing at end of shift sequence";
+                    goto utf7Error;
                 }
                 if (base64bits > 0) { /* left-over bits */
                     if (base64bits >= 6) {
@@ -5160,10 +5164,11 @@ int PyUnicode_EncodeDecimal(Py_UNICODE *s,
         }
         /* All other characters are considered unencodable */
         collstart = p;
-        for (collend = p+1; collend < end; collend++) {
+        collend = p+1;
+        while (collend < end) {
             if ((0 < *collend && *collend < 256) ||
-                Py_UNICODE_ISSPACE(*collend) ||
-                0 <= Py_UNICODE_TODECIMAL(*collend))
+                !Py_UNICODE_ISSPACE(*collend) ||
+                Py_UNICODE_TODECIMAL(*collend))
                 break;
         }
         /* cache callback name lookup
@@ -5480,13 +5485,13 @@ int fixcapitalize(PyUnicodeObject *self)
 
     if (len == 0)
         return 0;
-    if (!Py_UNICODE_ISUPPER(*s)) {
+    if (Py_UNICODE_ISLOWER(*s)) {
         *s = Py_UNICODE_TOUPPER(*s);
         status = 1;
     }
     s++;
     while (--len > 0) {
-        if (!Py_UNICODE_ISLOWER(*s)) {
+        if (Py_UNICODE_ISUPPER(*s)) {
             *s = Py_UNICODE_TOLOWER(*s);
             status = 1;
         }
@@ -6303,8 +6308,13 @@ unicode_count(PyUnicodeObject *self, PyObject *args)
     Py_ssize_t end = PY_SSIZE_T_MAX;
     PyObject *result;
 
-    if (!stringlib_parse_args_finds_unicode("count", args, &substring,
-                                            &start, &end))
+    if (!PyArg_ParseTuple(args, "O|O&O&:count", &substring,
+                          _PyEval_SliceIndex, &start, _PyEval_SliceIndex, &end))
+        return NULL;
+
+    substring = (PyUnicodeObject *)PyUnicode_FromObject(
+        (PyObject *)substring);
+    if (substring == NULL)
         return NULL;
 
     ADJUST_INDICES(start, end, self->length);
@@ -6364,7 +6374,7 @@ Decodes S using the codec registered for encoding. encoding defaults\n\
 to the default encoding. errors may be given to set a different error\n\
 handling scheme. Default is 'strict' meaning that encoding errors raise\n\
 a UnicodeDecodeError. Other possible values are 'ignore' and 'replace'\n\
-as well as any other name registered with codecs.register_error that is\n\
+as well as any other name registerd with codecs.register_error that is\n\
 able to handle UnicodeDecodeErrors.");
 
 static PyObject *
@@ -6486,7 +6496,7 @@ PyDoc_STRVAR(find__doc__,
              "S.find(sub [,start [,end]]) -> int\n\
 \n\
 Return the lowest index in S where substring sub is found,\n\
-such that sub is contained within S[start:end].  Optional\n\
+such that sub is contained within s[start:end].  Optional\n\
 arguments start and end are interpreted as in slice notation.\n\
 \n\
 Return -1 on failure.");
@@ -6494,13 +6504,12 @@ Return -1 on failure.");
 static PyObject *
 unicode_find(PyUnicodeObject *self, PyObject *args)
 {
-    PyUnicodeObject *substring;
+    PyObject *substring;
     Py_ssize_t start;
     Py_ssize_t end;
     Py_ssize_t result;
 
-    if (!stringlib_parse_args_finds_unicode("find", args, &substring,
-                                            &start, &end))
+    if (!_ParseTupleFinds(args, &substring, &start, &end))
         return NULL;
 
     result = stringlib_find_slice(
@@ -6538,27 +6547,14 @@ unicode_hash(PyUnicodeObject *self)
     register Py_UNICODE *p;
     register long x;
 
-#ifdef Py_DEBUG
-    assert(_Py_HashSecret_Initialized);
-#endif
     if (self->hash != -1)
         return self->hash;
     len = PyUnicode_GET_SIZE(self);
-    /*
-      We make the hash of the empty string be 0, rather than using
-      (prefix ^ suffix), since this slightly obfuscates the hash secret
-    */
-    if (len == 0) {
-        self->hash = 0;
-        return 0;
-    }
     p = PyUnicode_AS_UNICODE(self);
-    x = _Py_HashSecret.prefix;
-    x ^= *p << 7;
+    x = *p << 7;
     while (--len >= 0)
         x = (1000003*x) ^ *p++;
     x ^= PyUnicode_GET_SIZE(self);
-    x ^= _Py_HashSecret.suffix;
     if (x == -1)
         x = -2;
     self->hash = x;
@@ -6574,12 +6570,11 @@ static PyObject *
 unicode_index(PyUnicodeObject *self, PyObject *args)
 {
     Py_ssize_t result;
-    PyUnicodeObject *substring;
+    PyObject *substring;
     Py_ssize_t start;
     Py_ssize_t end;
 
-    if (!stringlib_parse_args_finds_unicode("index", args, &substring,
-                                            &start, &end))
+    if (!_ParseTupleFinds(args, &substring, &start, &end))
         return NULL;
 
     result = stringlib_find_slice(
@@ -7234,7 +7229,7 @@ PyDoc_STRVAR(rfind__doc__,
              "S.rfind(sub [,start [,end]]) -> int\n\
 \n\
 Return the highest index in S where substring sub is found,\n\
-such that sub is contained within S[start:end].  Optional\n\
+such that sub is contained within s[start:end].  Optional\n\
 arguments start and end are interpreted as in slice notation.\n\
 \n\
 Return -1 on failure.");
@@ -7242,13 +7237,12 @@ Return -1 on failure.");
 static PyObject *
 unicode_rfind(PyUnicodeObject *self, PyObject *args)
 {
-    PyUnicodeObject *substring;
+    PyObject *substring;
     Py_ssize_t start;
     Py_ssize_t end;
     Py_ssize_t result;
 
-    if (!stringlib_parse_args_finds_unicode("rfind", args, &substring,
-                                            &start, &end))
+    if (!_ParseTupleFinds(args, &substring, &start, &end))
         return NULL;
 
     result = stringlib_rfind_slice(
@@ -7270,13 +7264,12 @@ Like S.rfind() but raise ValueError when the substring is not found.");
 static PyObject *
 unicode_rindex(PyUnicodeObject *self, PyObject *args)
 {
-    PyUnicodeObject *substring;
+    PyObject *substring;
     Py_ssize_t start;
     Py_ssize_t end;
     Py_ssize_t result;
 
-    if (!stringlib_parse_args_finds_unicode("rindex", args, &substring,
-                                            &start, &end))
+    if (!_ParseTupleFinds(args, &substring, &start, &end))
         return NULL;
 
     result = stringlib_rfind_slice(
@@ -7655,7 +7648,8 @@ unicode_startswith(PyUnicodeObject *self,
     Py_ssize_t end = PY_SSIZE_T_MAX;
     int result;
 
-    if (!stringlib_parse_args_finds("startswith", args, &subobj, &start, &end))
+    if (!PyArg_ParseTuple(args, "O|O&O&:startswith", &subobj,
+                          _PyEval_SliceIndex, &start, _PyEval_SliceIndex, &end))
         return NULL;
     if (PyTuple_Check(subobj)) {
         Py_ssize_t i;
@@ -7674,12 +7668,8 @@ unicode_startswith(PyUnicodeObject *self,
         Py_RETURN_FALSE;
     }
     substring = (PyUnicodeObject *)PyUnicode_FromObject(subobj);
-    if (substring == NULL) {
-        if (PyErr_ExceptionMatches(PyExc_TypeError))
-            PyErr_Format(PyExc_TypeError, "startswith first arg must be str, "
-                         "unicode, or tuple, not %s", Py_TYPE(subobj)->tp_name);
+    if (substring == NULL)
         return NULL;
-    }
     result = tailmatch(self, substring, start, end, -1);
     Py_DECREF(substring);
     return PyBool_FromLong(result);
@@ -7704,7 +7694,8 @@ unicode_endswith(PyUnicodeObject *self,
     Py_ssize_t end = PY_SSIZE_T_MAX;
     int result;
 
-    if (!stringlib_parse_args_finds("endswith", args, &subobj, &start, &end))
+    if (!PyArg_ParseTuple(args, "O|O&O&:endswith", &subobj,
+                          _PyEval_SliceIndex, &start, _PyEval_SliceIndex, &end))
         return NULL;
     if (PyTuple_Check(subobj)) {
         Py_ssize_t i;
@@ -7722,12 +7713,9 @@ unicode_endswith(PyUnicodeObject *self,
         Py_RETURN_FALSE;
     }
     substring = (PyUnicodeObject *)PyUnicode_FromObject(subobj);
-    if (substring == NULL) {
-        if (PyErr_ExceptionMatches(PyExc_TypeError))
-            PyErr_Format(PyExc_TypeError, "endswith first arg must be str, "
-                         "unicode, or tuple, not %s", Py_TYPE(subobj)->tp_name);
+    if (substring == NULL)
         return NULL;
-    }
+
     result = tailmatch(self, substring, start, end, +1);
     Py_DECREF(substring);
     return PyBool_FromLong(result);

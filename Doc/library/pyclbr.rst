@@ -1,3 +1,4 @@
+
 :mod:`pyclbr` --- Python class browser support
 ==============================================
 
@@ -5,9 +6,6 @@
    :synopsis: Supports information extraction for a Python class browser.
 .. sectionauthor:: Fred L. Drake, Jr. <fdrake@acm.org>
 
-**Source code:** :source:`Lib/pyclbr.py`
-
---------------
 
 The :mod:`pyclbr` module can be used to determine some limited information
 about the classes, methods and top-level functions defined in a module.  The
@@ -45,7 +43,7 @@ Class Objects
 
 The :class:`Class` objects used as values in the dictionary returned by
 :func:`readmodule` and :func:`readmodule_ex` provide the following data
-attributes:
+members:
 
 
 .. attribute:: Class.module
@@ -89,7 +87,7 @@ Function Objects
 ----------------
 
 The :class:`Function` objects used as values in the dictionary returned by
-:func:`readmodule_ex` provide the following attributes:
+:func:`readmodule_ex` provide the following data members:
 
 
 .. attribute:: Function.module

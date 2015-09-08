@@ -95,7 +95,7 @@ works its magic::
    $
 
 There's no output!  That's normal, and it means all the examples worked.  Pass
-``-v`` to the script, and :mod:`doctest` prints a detailed log of what
+:option:`-v` to the script, and :mod:`doctest` prints a detailed log of what
 it's trying, and prints a summary at the end::
 
    $ python example.py -v
@@ -163,7 +163,7 @@ example(s) and the cause(s) of the failure(s) are printed to stdout, and the
 final line of output is ``***Test Failed*** N failures.``, where *N* is the
 number of examples that failed.
 
-Run it with the ``-v`` switch instead::
+Run it with the :option:`-v` switch instead::
 
    python M.py -v
 
@@ -172,7 +172,7 @@ with assorted summaries at the end.
 
 You can force verbose mode by passing ``verbose=True`` to :func:`testmod`, or
 prohibit it by passing ``verbose=False``.  In either of those cases,
-``sys.argv`` is not examined by :func:`testmod` (so passing ``-v`` or not
+``sys.argv`` is not examined by :func:`testmod` (so passing :option:`-v` or not
 has no effect).
 
 Since Python 2.6, there is also a command line shortcut for running
@@ -242,7 +242,7 @@ See section :ref:`doctest-basic-api` for a description of the optional arguments
 that can be used to tell it to look for files in other locations.
 
 Like :func:`testmod`, :func:`testfile`'s verbosity can be set with the
-``-v`` command-line switch or with the optional keyword argument
+:option:`-v` command-line switch or with the optional keyword argument
 *verbose*.
 
 Since Python 2.6, there is also a command line shortcut for running
@@ -982,7 +982,7 @@ test module::
 
    def load_tests(loader, tests, ignore):
        tests.addTests(doctest.DocTestSuite(my_module_with_doctests))
-       return tests
+       return test
 
 There are two main functions for creating :class:`unittest.TestSuite` instances
 from text files and modules with doctests:
@@ -1199,11 +1199,12 @@ DocTest Objects
 .. class:: DocTest(examples, globs, name, filename, lineno, docstring)
 
    A collection of doctest examples that should be run in a single namespace.  The
-   constructor arguments are used to initialize the attributes of the same names.
+   constructor arguments are used to initialize the member variables of the same
+   names.
 
    .. versionadded:: 2.4
 
-   :class:`DocTest` defines the following attributes.  They are initialized by
+   :class:`DocTest` defines the following member variables.  They are initialized by
    the constructor, and should not be modified directly.
 
 
@@ -1256,12 +1257,12 @@ Example Objects
 .. class:: Example(source, want[, exc_msg][, lineno][, indent][, options])
 
    A single interactive example, consisting of a Python statement and its expected
-   output.  The constructor arguments are used to initialize the attributes of the
-   same names.
+   output.  The constructor arguments are used to initialize the member variables
+   of the same names.
 
    .. versionadded:: 2.4
 
-   :class:`Example` defines the following attributes.  They are initialized by
+   :class:`Example` defines the following member variables.  They are initialized by
    the constructor, and should not be modified directly.
 
 
@@ -1452,7 +1453,7 @@ DocTestRunner objects
    verbosity.  If *verbose* is ``True``, then information is printed about each
    example, as it is run.  If *verbose* is ``False``, then only failures are
    printed.  If *verbose* is unspecified, or ``None``, then verbose output is used
-   iff the command-line switch ``-v`` is used.
+   iff the command-line switch :option:`-v` is used.
 
    The optional keyword argument *optionflags* can be used to control how the test
    runner compares expected output to actual output, and how it displays failures.
@@ -1769,9 +1770,9 @@ There are two exceptions that may be raised by :class:`DebugRunner` instances:
 
    An exception raised by :class:`DocTestRunner` to signal that a doctest example's
    actual output did not match its expected output. The constructor arguments are
-   used to initialize the attributes of the same names.
+   used to initialize the member variables of the same names.
 
-:exc:`DocTestFailure` defines the following attributes:
+:exc:`DocTestFailure` defines the following member variables:
 
 
 .. attribute:: DocTestFailure.test
@@ -1793,9 +1794,9 @@ There are two exceptions that may be raised by :class:`DebugRunner` instances:
 
    An exception raised by :class:`DocTestRunner` to signal that a doctest
    example raised an unexpected exception.  The constructor arguments are used
-   to initialize the attributes of the same names.
+   to initialize the member variables of the same names.
 
-:exc:`UnexpectedException` defines the following attributes:
+:exc:`UnexpectedException` defines the following member variables:
 
 
 .. attribute:: UnexpectedException.test

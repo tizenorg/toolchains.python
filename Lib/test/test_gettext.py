@@ -64,13 +64,15 @@ class GettextBaseTest(unittest.TestCase):
     def setUp(self):
         if not os.path.isdir(LOCALEDIR):
             os.makedirs(LOCALEDIR)
-        with open(MOFILE, 'wb') as fp:
-            fp.write(base64.decodestring(GNU_MO_DATA))
-        with open(UMOFILE, 'wb') as fp:
-            fp.write(base64.decodestring(UMO_DATA))
-        with open(MMOFILE, 'wb') as fp:
-            fp.write(base64.decodestring(MMO_DATA))
-
+        fp = open(MOFILE, 'wb')
+        fp.write(base64.decodestring(GNU_MO_DATA))
+        fp.close()
+        fp = open(UMOFILE, 'wb')
+        fp.write(base64.decodestring(UMO_DATA))
+        fp.close()
+        fp = open(MMOFILE, 'wb')
+        fp.write(base64.decodestring(MMO_DATA))
+        fp.close()
         self.env = test_support.EnvironmentVarGuard()
         self.env['LANGUAGE'] = 'xx'
         gettext._translations.clear()
@@ -133,8 +135,9 @@ trggrkg zrffntr pngnybt yvoenel.''')
     def test_the_alternative_interface(self):
         eq = self.assertEqual
         # test the alternative interface
-        with open(self.mofile, 'rb') as fp:
-            t = gettext.GNUTranslations(fp)
+        fp = open(self.mofile, 'rb')
+        t = gettext.GNUTranslations(fp)
+        fp.close()
         # Install the translation object
         t.install()
         eq(_('nudge nudge'), 'wink wink')
@@ -224,8 +227,9 @@ class PluralFormsTestCase(GettextBaseTest):
 
     def test_plural_forms2(self):
         eq = self.assertEqual
-        with open(self.mofile, 'rb') as fp:
-            t = gettext.GNUTranslations(fp)
+        fp = open(self.mofile, 'rb')
+        t = gettext.GNUTranslations(fp)
+        fp.close()
         x = t.ngettext('There is %s file', 'There are %s files', 1)
         eq(x, 'Hay %s fichero')
         x = t.ngettext('There is %s file', 'There are %s files', 2)
@@ -295,8 +299,11 @@ class PluralFormsTestCase(GettextBaseTest):
 class UnicodeTranslationsTest(GettextBaseTest):
     def setUp(self):
         GettextBaseTest.setUp(self)
-        with open(UMOFILE, 'rb') as fp:
+        fp = open(UMOFILE, 'rb')
+        try:
             self.t = gettext.GNUTranslations(fp)
+        finally:
+            fp.close()
         self._ = self.t.ugettext
 
     def test_unicode_msgid(self):
@@ -312,12 +319,15 @@ class UnicodeTranslationsTest(GettextBaseTest):
 class WeirdMetadataTest(GettextBaseTest):
     def setUp(self):
         GettextBaseTest.setUp(self)
-        with open(MMOFILE, 'rb') as fp:
+        fp = open(MMOFILE, 'rb')
+        try:
             try:
                 self.t = gettext.GNUTranslations(fp)
             except:
                 self.tearDown()
                 raise
+        finally:
+            fp.close()
 
     def test_weird_metadata(self):
         info = self.t.info()

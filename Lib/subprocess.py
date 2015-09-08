@@ -396,7 +396,6 @@ import types
 import traceback
 import gc
 import signal
-import errno
 
 # Exception classes used by this module.
 class CalledProcessError(Exception):
@@ -428,6 +427,7 @@ if mswindows:
 else:
     import select
     _has_poll = hasattr(select, 'poll')
+    import errno
     import fcntl
     import pickle
 
@@ -441,15 +441,8 @@ __all__ = ["Popen", "PIPE", "STDOUT", "call", "check_call",
            "check_output", "CalledProcessError"]
 
 if mswindows:
-    from _subprocess import (CREATE_NEW_CONSOLE, CREATE_NEW_PROCESS_GROUP,
-                             STD_INPUT_HANDLE, STD_OUTPUT_HANDLE,
-                             STD_ERROR_HANDLE, SW_HIDE,
-                             STARTF_USESTDHANDLES, STARTF_USESHOWWINDOW)
-
-    __all__.extend(["CREATE_NEW_CONSOLE", "CREATE_NEW_PROCESS_GROUP",
-                    "STD_INPUT_HANDLE", "STD_OUTPUT_HANDLE",
-                    "STD_ERROR_HANDLE", "SW_HIDE",
-                    "STARTF_USESTDHANDLES", "STARTF_USESHOWWINDOW"])
+    from _subprocess import CREATE_NEW_CONSOLE, CREATE_NEW_PROCESS_GROUP
+    __all__.extend(["CREATE_NEW_CONSOLE", "CREATE_NEW_PROCESS_GROUP"])
 try:
     MAXFD = os.sysconf("SC_OPEN_MAX")
 except:
@@ -460,7 +453,7 @@ _active = []
 def _cleanup():
     for inst in _active[:]:
         res = inst._internal_poll(_deadstate=sys.maxint)
-        if res is not None:
+        if res is not None and res >= 0:
             try:
                 _active.remove(inst)
             except ValueError:
@@ -476,7 +469,7 @@ def _eintr_retry_call(func, *args):
     while True:
         try:
             return func(*args)
-        except (OSError, IOError) as e:
+        except OSError, e:
             if e.errno == errno.EINTR:
                 continue
             raise
@@ -707,10 +700,7 @@ class Popen(object):
 
 
     def __del__(self, _maxint=sys.maxint, _active=_active):
-        # If __init__ hasn't had a chance to execute (e.g. if it
-        # was passed an undeclared keyword argument), we don't
-        # have a _child_created attribute at all.
-        if not getattr(self, '_child_created', False):
+        if not self._child_created:
             # We didn't get to successfully create a child process.
             return
         # In case the child hasn't been waited on, check if it's done.
@@ -736,17 +726,13 @@ class Popen(object):
             stderr = None
             if self.stdin:
                 if input:
-                    try:
-                        self.stdin.write(input)
-                    except IOError as e:
-                        if e.errno != errno.EPIPE and e.errno != errno.EINVAL:
-                            raise
+                    self.stdin.write(input)
                 self.stdin.close()
             elif self.stdout:
-                stdout = _eintr_retry_call(self.stdout.read)
+                stdout = self.stdout.read()
                 self.stdout.close()
             elif self.stderr:
-                stderr = _eintr_retry_call(self.stderr.read)
+                stderr = self.stderr.read()
                 self.stderr.close()
             self.wait()
             return (stdout, stderr)
@@ -897,7 +883,7 @@ class Popen(object):
             except pywintypes.error, e:
                 # Translate pywintypes.error to WindowsError, which is
                 # a subclass of OSError.  FIXME: We should really
-                # translate errno using _sys_errlist (or similar), but
+                # translate errno using _sys_errlist (or simliar), but
                 # how can this be done from Python?
                 raise WindowsError(*e.args)
             finally:
@@ -970,11 +956,7 @@ class Popen(object):
 
             if self.stdin:
                 if input is not None:
-                    try:
-                        self.stdin.write(input)
-                    except IOError as e:
-                        if e.errno != errno.EPIPE:
-                            raise
+                    self.stdin.write(input)
                 self.stdin.close()
 
             if self.stdout:
@@ -1035,7 +1017,7 @@ class Popen(object):
             if stdin is None:
                 pass
             elif stdin == PIPE:
-                p2cread, p2cwrite = self.pipe_cloexec()
+                p2cread, p2cwrite = os.pipe()
             elif isinstance(stdin, int):
                 p2cread = stdin
             else:
@@ -1045,7 +1027,7 @@ class Popen(object):
             if stdout is None:
                 pass
             elif stdout == PIPE:
-                c2pread, c2pwrite = self.pipe_cloexec()
+                c2pread, c2pwrite = os.pipe()
             elif isinstance(stdout, int):
                 c2pwrite = stdout
             else:
@@ -1055,7 +1037,7 @@ class Popen(object):
             if stderr is None:
                 pass
             elif stderr == PIPE:
-                errread, errwrite = self.pipe_cloexec()
+                errread, errwrite = os.pipe()
             elif stderr == STDOUT:
                 errwrite = c2pwrite
             elif isinstance(stderr, int):
@@ -1069,29 +1051,14 @@ class Popen(object):
                     errread, errwrite)
 
 
-        def _set_cloexec_flag(self, fd, cloexec=True):
+        def _set_cloexec_flag(self, fd):
             try:
                 cloexec_flag = fcntl.FD_CLOEXEC
             except AttributeError:
                 cloexec_flag = 1
 
             old = fcntl.fcntl(fd, fcntl.F_GETFD)
-            if cloexec:
-                fcntl.fcntl(fd, fcntl.F_SETFD, old | cloexec_flag)
-            else:
-                fcntl.fcntl(fd, fcntl.F_SETFD, old & ~cloexec_flag)
-
-
-        def pipe_cloexec(self):
-            """Create a pipe with FDs set CLOEXEC."""
-            # Pipes' FDs are set CLOEXEC by default because we don't want them
-            # to be inherited by other subprocesses: the CLOEXEC flag is removed
-            # from the child's FDs by _dup2(), between fork() and exec().
-            # This is not atomic: we would need the pipe2() syscall for that.
-            r, w = os.pipe()
-            self._set_cloexec_flag(r)
-            self._set_cloexec_flag(w)
-            return r, w
+            fcntl.fcntl(fd, fcntl.F_SETFD, old | cloexec_flag)
 
 
         def _close_fds(self, but):
@@ -1132,9 +1099,11 @@ class Popen(object):
             # For transferring possible exec failure from child to parent
             # The first char specifies the exception type: 0 means
             # OSError, 1 means some other error.
-            errpipe_read, errpipe_write = self.pipe_cloexec()
+            errpipe_read, errpipe_write = os.pipe()
             try:
                 try:
+                    self._set_cloexec_flag(errpipe_write)
+
                     gc_was_enabled = gc.isenabled()
                     # Disable gc to avoid bug where gc -> file_dealloc ->
                     # write to stderr -> hang.  http://bugs.python.org/issue1336
@@ -1158,34 +1127,22 @@ class Popen(object):
                                 os.close(errread)
                             os.close(errpipe_read)
 
-                            # When duping fds, if there arises a situation
-                            # where one of the fds is either 0, 1 or 2, it
-                            # is possible that it is overwritten (#12607).
-                            if c2pwrite == 0:
-                                c2pwrite = os.dup(c2pwrite)
-                            if errwrite == 0 or errwrite == 1:
-                                errwrite = os.dup(errwrite)
-
                             # Dup fds for child
-                            def _dup2(a, b):
-                                # dup2() removes the CLOEXEC flag but
-                                # we must do it ourselves if dup2()
-                                # would be a no-op (issue #10806).
-                                if a == b:
-                                    self._set_cloexec_flag(a, False)
-                                elif a is not None:
-                                    os.dup2(a, b)
-                            _dup2(p2cread, 0)
-                            _dup2(c2pwrite, 1)
-                            _dup2(errwrite, 2)
+                            if p2cread is not None:
+                                os.dup2(p2cread, 0)
+                            if c2pwrite is not None:
+                                os.dup2(c2pwrite, 1)
+                            if errwrite is not None:
+                                os.dup2(errwrite, 2)
 
-                            # Close pipe fds.  Make sure we don't close the
-                            # same fd more than once, or standard fds.
-                            closed = { None }
-                            for fd in [p2cread, c2pwrite, errwrite]:
-                                if fd not in closed and fd > 2:
-                                    os.close(fd)
-                                    closed.add(fd)
+                            # Close pipe fds.  Make sure we don't close the same
+                            # fd more than once, or standard fds.
+                            if p2cread is not None and p2cread not in (0,):
+                                os.close(p2cread)
+                            if c2pwrite is not None and c2pwrite not in (p2cread, 1):
+                                os.close(c2pwrite)
+                            if errwrite is not None and errwrite not in (p2cread, c2pwrite, 2):
+                                os.close(errwrite)
 
                             # Close all other fds, if asked for
                             if close_fds:
@@ -1237,11 +1194,7 @@ class Popen(object):
                 os.close(errpipe_read)
 
             if data != "":
-                try:
-                    _eintr_retry_call(os.waitpid, self.pid, 0)
-                except OSError as e:
-                    if e.errno != errno.ECHILD:
-                        raise
+                _eintr_retry_call(os.waitpid, self.pid, 0)
                 child_exception = pickle.loads(data)
                 for fd in (p2cwrite, c2pread, errread):
                     if fd is not None:
@@ -1287,15 +1240,7 @@ class Popen(object):
             """Wait for child process to terminate.  Returns returncode
             attribute."""
             if self.returncode is None:
-                try:
-                    pid, sts = _eintr_retry_call(os.waitpid, self.pid, 0)
-                except OSError as e:
-                    if e.errno != errno.ECHILD:
-                        raise
-                    # This happens if SIGCLD is set to be ignored or waiting
-                    # for child processes has otherwise been disabled for our
-                    # process.  This child is dead, we can't get the status.
-                    sts = 0
+                pid, sts = _eintr_retry_call(os.waitpid, self.pid, 0)
                 self._handle_exitstatus(sts)
             return self.returncode
 
@@ -1372,16 +1317,9 @@ class Popen(object):
                 for fd, mode in ready:
                     if mode & select.POLLOUT:
                         chunk = input[input_offset : input_offset + _PIPE_BUF]
-                        try:
-                            input_offset += os.write(fd, chunk)
-                        except OSError as e:
-                            if e.errno == errno.EPIPE:
-                                close_unregister_and_remove(fd)
-                            else:
-                                raise
-                        else:
-                            if input_offset >= len(input):
-                                close_unregister_and_remove(fd)
+                        input_offset += os.write(fd, chunk)
+                        if input_offset >= len(input):
+                            close_unregister_and_remove(fd)
                     elif mode & select_POLLIN_POLLPRI:
                         data = os.read(fd, 4096)
                         if not data:
@@ -1420,19 +1358,11 @@ class Popen(object):
 
                 if self.stdin in wlist:
                     chunk = input[input_offset : input_offset + _PIPE_BUF]
-                    try:
-                        bytes_written = os.write(self.stdin.fileno(), chunk)
-                    except OSError as e:
-                        if e.errno == errno.EPIPE:
-                            self.stdin.close()
-                            write_set.remove(self.stdin)
-                        else:
-                            raise
-                    else:
-                        input_offset += bytes_written
-                        if input_offset >= len(input):
-                            self.stdin.close()
-                            write_set.remove(self.stdin)
+                    bytes_written = os.write(self.stdin.fileno(), chunk)
+                    input_offset += bytes_written
+                    if input_offset >= len(input):
+                        self.stdin.close()
+                        write_set.remove(self.stdin)
 
                 if self.stdout in rlist:
                     data = os.read(self.stdout.fileno(), 1024)
